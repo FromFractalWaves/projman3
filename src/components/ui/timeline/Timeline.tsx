@@ -1,14 +1,22 @@
 // src/components/ui/timeline/Timeline.tsx
-import { TimelineProps } from '@/types/timeline';
-import { TimelineItem } from './TimelineItem';
+import type { TimelineProps } from '@/types/timeline';
 
-export const Timeline: React.FC<TimelineProps> = ({ events = [] }) => {
+export const Timeline = ({ events, onEventClick }: TimelineProps) => {
+  // Sort events by date
+  const sortedEvents = [...events].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="relative">
-        <div className="absolute left-8 top-0 h-full w-0.5 bg-gray-200" />
-        {events.map((event) => (
-          <TimelineItem key={event.id} event={event} />
+    <div className="p-6 bg-neutral-900 rounded-lg">
+      <h2 className="text-2xl font-bold text-white mb-6">Timeline</h2>
+      <div className="space-y-2">
+        {sortedEvents.map((event) => (
+          <TimelineItem 
+            key={event.id} 
+            event={event} 
+            onClick={onEventClick}
+          />
         ))}
       </div>
     </div>

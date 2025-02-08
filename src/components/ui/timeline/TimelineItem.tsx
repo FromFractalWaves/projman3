@@ -1,14 +1,20 @@
 
 // src/components/ui/timeline/TimelineItem.tsx
-import { TimelineIndicator } from './TimelineIndicator';
-import { TimelineContent } from './TimelineContent';
-import { TimelineItemProps } from '@/types/timeline';
+import type { TimelineItemProps } from '@/types/timeline';
 
-export const TimelineItem: React.FC<TimelineItemProps> = ({ event }) => {
+export const TimelineItem = ({ event, onClick }: TimelineItemProps) => {
   return (
-    <div className="relative flex items-start mb-8">
-      <TimelineIndicator status={event.status} />
-      <TimelineContent event={event} />
+    <div className="flex gap-4">
+      <div className="flex flex-col items-center">
+        <TimelineIndicator status={event.status} />
+        <div className="w-0.5 h-full bg-neutral-800" />
+      </div>
+      <div 
+        className="flex-1 cursor-pointer hover:opacity-75 transition-opacity"
+        onClick={() => onClick?.(event)}
+      >
+        <TimelineContent event={event} />
+      </div>
     </div>
   );
 };

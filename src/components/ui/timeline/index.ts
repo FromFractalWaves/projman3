@@ -1,5 +1,6 @@
+
 // src/components/ui/timeline/index.ts
-export * from './Timeline';
-export * from './TimelineItem';
-export * from './TimelineIndicator';
-export * from './TimelineContent';
+export { Timeline } from './Timeline';
+export { TimelineItem } from './TimelineItem';
+export { TimelineIndicator } from './TimelineIndicator';
+export { TimelineContent } from './TimelineContent';

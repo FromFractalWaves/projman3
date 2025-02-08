@@ -5,3 +5,4 @@ export * from './useTasks';
 export * from './useTodoLists';
 export * from './useTimeEntries';
 export * from './forms';
+export * from './useTimeline';
