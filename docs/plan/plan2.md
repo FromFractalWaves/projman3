@@ -1,0 +1,1 @@
+ok so we want to make projects into "timeline projects" which can contain any objectives, and tasks are action, almost always multiobjective. we want to use the calender, maybe have a timeline view, but also project view and task collections.

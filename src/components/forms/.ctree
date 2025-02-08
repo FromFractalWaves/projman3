@@ -1,0 +1,532 @@
+forms/
+├── BaseForm.tsx
+│       // src/components/forms/BaseForm.tsx
+│       import React from 'react';
+│       import {
+│         Dialog,
+│         DialogContent,
+│         DialogDescription,
+│         DialogHeader,
+│         DialogTitle,
+│         DialogTrigger,
+│       } from "@/components/ui/dialog";
+│       import { Button } from "@/components/ui/button";
+│       import { PlusCircle } from 'lucide-react';
+│       import type { FieldConfig } from '@/types/forms/fields';
+│       import { FormField } from './fields';
+│       
+│       interface BaseFormProps<T> {
+│         title: string;
+│         description?: string;
+│         triggerButton: {
+│           label: string;
+│           icon?: React.ReactNode;
+│         };
+│         fields: FieldConfig[];
+│         onSubmit: (data: T) => Promise<void>;
+│         defaultValues?: Partial<T>;
+│         submitLabel?: string;
+│       }
+│       
+│       export function BaseForm<T extends Record<string, any>>({
+│         title,
+│         description,
+│         triggerButton,
+│         fields,
+│         onSubmit,
+│         defaultValues = {},
+│         submitLabel = 'Save'
+│       }: BaseFormProps<T>) {
+│         const [open, setOpen] = React.useState(false);
+│         const [formData, setFormData] = React.useState<Partial<T>>(defaultValues);
+│         const [errors, setErrors] = React.useState<Record<string, string>>({});
+│         const [isSubmitting, setIsSubmitting] = React.useState(false);
+│       
+│         const handleFieldChange = (name: string, value: any) => {
+│           setFormData(prev => ({
+│             ...prev,
+│             [name]: value
+│           }));
+│           if (errors[name]) {
+│             setErrors(prev => {
+│               const { [name]: _, ...rest } = prev;
+│               return rest;
+│             });
+│           }
+│         };
+│       
+│         const handleSubmit = async (e: React.FormEvent) => {
+│           e.preventDefault();
+│           setIsSubmitting(true);
+│           try {
+│             await onSubmit(formData as T);
+│             setOpen(false);
+│             setFormData(defaultValues);
+│             setErrors({});
+│           } catch (error: any) {
+│             setErrors(prev => ({
+│               ...prev,
+│               submit: error.message
+│             }));
+│           } finally {
+│             setIsSubmitting(false);
+│           }
+│         };
+│       
+│         return (
+│           <Dialog open={open} onOpenChange={setOpen}>
+│             <DialogTrigger asChild>
+│               <Button variant="outline" className="gap-2">
+│                 {triggerButton.icon || <PlusCircle className="h-4 w-4" />}
+│                 {triggerButton.label}
+│               </Button>
+│             </DialogTrigger>
+│             <DialogContent className="sm:max-w-[425px]">
+│               <DialogHeader>
+│                 <DialogTitle>{title}</DialogTitle>
+│                 {description && <DialogDescription>{description}</DialogDescription>}
+│               </DialogHeader>
+│               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+│                 {fields.map((field) => (
+│                   <FormField
+│                     key={field.name}
+│                     field={field}
+│                     value={formData[field.name]}
+│                     onChange={handleFieldChange}
+│                     error={errors[field.name]}
+│                   />
+│                 ))}
+│                 
+│                 {errors.submit && (
+│                   <div className="bg-red-500/10 border border-red-500 rounded-md p-3">
+│                     <p className="text-sm text-red-500">{errors.submit}</p>
+│                   </div>
+│                 )}
+│       
+│                 <div className="flex justify-end gap-3 pt-4">
+│                   <Button
+│                     type="button"
+│                     variant="outline"
+│                     onClick={() => setOpen(false)}
+│                     disabled={isSubmitting}
+│                   >
+│                     Cancel
+│                   </Button>
+│                   <Button type="submit" disabled={isSubmitting}>
+│                     {isSubmitting ? "Saving..." : submitLabel}
+│                   </Button>
+│                 </div>
+│               </form>
+│             </DialogContent>
+│           </Dialog>
+│         );
+│       }
+├── Form.tsx
+│       // src/components/forms/Form.tsx
+│       import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+│       import { Button } from '@/components/ui';
+│       import type { FormConfig, FormField } from '@/types/forms';
+│       
+│       interface FormProps {
+│         config: FormConfig;
+│         fields: FormField[];
+│         onSubmit: (data: Record<string, any>) => Promise<void>;
+│         icon?: React.ReactNode;
+│       }
+│       
+│       export function Form({ config, fields, onSubmit, icon }: FormProps) {
+│         const [values, setValues] = useState<Record<string, any>>({});
+│         const [errors, setErrors] = useState<Record<string, string>>({});
+│         const [isSubmitting, setIsSubmitting] = useState(false);
+│       
+│         const handleSubmit = async (e: React.FormEvent) => {
+│           e.preventDefault();
+│           setIsSubmitting(true);
+│           try {
+│             await onSubmit(values);
+│             config.onSuccess?.();
+│           } catch (error) {
+│             // Handle error
+│           } finally {
+│             setIsSubmitting(false);
+│           }
+│         };
+│       
+│         return (
+│           <Card className="bg-gray-800 border-gray-700">
+│             <CardHeader>
+│               <CardTitle className="flex items-center gap-2 text-gray-100">
+│                 {icon}
+│                 {config.title}
+│               </CardTitle>
+│             </CardHeader>
+│             <CardContent>
+│               <FormContext.Provider value={{ values, errors, setFieldValue }}>
+│                 <form onSubmit={handleSubmit} className="space-y-4">
+│                   {fields.map((field) => (
+│                     <FormField key={field.name} field={field} />
+│                   ))}
+│                   <div className="flex justify-end gap-3">
+│                     {config.showCancel && (
+│                       <Button variant="outline" onClick={config.onCancel}>
+│                         Cancel
+│                       </Button>
+│                     )}
+│                     <Button type="submit" disabled={isSubmitting}>
+│                       {isSubmitting ? "Saving..." : config.submitLabel || "Submit"}
+│                     </Button>
+│                   </div>
+│                 </form>
+│               </FormContext.Provider>
+│             </CardContent>
+│           </Card>
+│         );
+│       }
+├── FormContext.tsx
+│       // src/components/forms/FormContext.tsx
+│       import React from 'react';
+│       
+│       interface FormContextValue {
+│         values: Record<string, any>;
+│         errors: Record<string, string>;
+│         touched: Record<string, boolean>;
+│         setFieldValue: (name: string, value: any) => void;
+│         setFieldError: (name: string, error: string) => void;
+│         setFieldTouched: (name: string, touched: boolean) => void;
+│       }
+│       
+│       const FormContext = React.createContext<FormContextValue | undefined>(undefined);
+│       
+│       // Example usage with ProjectForm
+│       // src/app/page.tsx 
+│       function Home() {
+│         const projectConfig: FormConfig = {
+│           title: "Add Project",
+│           submitLabel: "Create Project",
+│           onSuccess: () => {
+│             refreshProjects();
+│           }
+│         };
+│       
+│         const projectFields: FormField[] = [
+│           {
+│             name: "name",
+│             label: "Project Name",
+│             type: "text",
+│             required: true
+│           },
+│           {
+│             name: "description", 
+│             label: "Description",
+│             type: "textarea"
+│           },
+│           {
+│             name: "status",
+│             label: "Status",
+│             type: "select",
+│             options: [
+│               { label: "Not Started", value: "not-started" },
+│               { label: "In Progress", value: "in-progress" },
+│               { label: "Completed", value: "completed" }
+│             ]
+│           },
+│           {
+│             name: "startDate",
+│             label: "Start Date", 
+│             type: "date"
+│           },
+│           {
+│             name: "dueDate",
+│             label: "Due Date",
+│             type: "date" 
+│           }
+│         ];
+│       
+│         return (
+│           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+│             <Form
+│               config={projectConfig}
+│               fields={projectFields}
+│               onSubmit={handleProjectSubmit}
+│               icon={<Folder size={20} />}
+│             />
+│       
+│             <Form
+│               config={{
+│                 title: "Add Task",
+│                 submitLabel: "Create Task"
+│               }}
+│               fields={taskFields}
+│               onSubmit={handleTaskSubmit}
+│               icon={<CheckSquare size={20} />}
+│             />
+│       
+│             {/* Similar pattern for Objective and TimeEntry forms */}
+│           </div>
+│         );
+│       }
+│       
+│       // src/types/forms.ts
+│       export interface FormConfig {
+│         title: string;
+│         submitLabel?: string;
+│         showCancel?: boolean;
+│         onCancel?: () => void;
+│         onSuccess?: () => void;
+│       }
+│       
+│       export interface FormField {
+│         name: string;
+│         label: string;
+│         type: 'text' | 'textarea' | 'select' | 'date' | 'number';
+│         required?: boolean;
+│         options?: Array<{label: string, value: string}>;
+│         placeholder?: string;
+│         defaultValue?: any;
+│         validate?: (value: any) => string | undefined;
+│       }
+├── fields/
+│   ├── FormButton.tsx
+│   │       // src/components/forms/fields/FormButtons.tsx
+│   │       import React from 'react';
+│   │       import { Button } from '@/components/ui/button';
+│   │       import { cn } from '@/lib/utils';
+│   │       import type { FormButtonsProps, ButtonColor } from '@/types/forms/fields';
+│   │       
+│   │       const colorVariants: Record<ButtonColor, string> = {
+│   │         blue: 'bg-blue-600 hover:bg-blue-700',
+│   │         green: 'bg-green-600 hover:bg-green-700',
+│   │         yellow: 'bg-yellow-600 hover:bg-yellow-700',
+│   │         purple: 'bg-purple-600 hover:bg-purple-700',
+│   │         indigo: 'bg-indigo-600 hover:bg-indigo-700',
+│   │       };
+│   │       
+│   │       export function FormButtons({
+│   │         config,
+│   │         onCancel,
+│   │         onReset,
+│   │         isSubmitting = false,
+│   │         submitText = 'Save',
+│   │         cancelText = 'Cancel',
+│   │         color = 'blue',
+│   │         disabled = false,
+│   │         className
+│   │       }: FormButtonsProps) {
+│   │         const submitConfig = config?.submit || {
+│   │           label: submitText,
+│   │           color: color,
+│   │           disabled: disabled || isSubmitting,
+│   │         };
+│   │       
+│   │         const cancelConfig = config?.cancel || (onCancel ? {
+│   │           label: cancelText,
+│   │           variant: 'outline' as const,
+│   │           disabled: disabled || isSubmitting,
+│   │         } : undefined);
+│   │       
+│   │         return (
+│   │           <div className={cn('flex justify-end gap-3 pt-4', className)}>
+│   │             {cancelConfig && onCancel && (
+│   │               <Button
+│   │                 type="button"
+│   │                 variant={cancelConfig.variant || 'outline'}
+│   │                 size={cancelConfig.size}
+│   │                 onClick={onCancel}
+│   │                 disabled={cancelConfig.disabled}
+│   │                 className={cancelConfig.className}
+│   │               >
+│   │                 {cancelConfig.icon}
+│   │                 {cancelConfig.label}
+│   │               </Button>
+│   │             )}
+│   │             
+│   │             <Button
+│   │               type="submit"
+│   │               variant={submitConfig.variant || 'default'}
+│   │               size={submitConfig.size}
+│   │               disabled={submitConfig.disabled}
+│   │               className={cn(
+│   │                 colorVariants[submitConfig.color || color],
+│   │                 submitConfig.className
+│   │               )}
+│   │             >
+│   │               {submitConfig.icon}
+│   │               {isSubmitting ? 'Saving...' : submitConfig.label}
+│   │             </Button>
+│   │       
+│   │             {config?.reset && onReset && (
+│   │               <Button
+│   │                 type="button"
+│   │                 variant={config.reset.variant || 'ghost'}
+│   │                 size={config.reset.size}
+│   │                 onClick={onReset}
+│   │                 disabled={config.reset.disabled}
+│   │                 className={config.reset.className}
+│   │               >
+│   │                 {config.reset.icon}
+│   │                 {config.reset.label}
+│   │               </Button>
+│   │             )}
+│   │           </div>
+│   │         );
+│   │       }
+│   ├── FormField.tsx
+│   │       // src/components/forms/fields/FormField.tsx
+│   │       import React from 'react';
+│   │       import type { FieldConfig, FormFieldProps } from '@/types/forms/fields';
+│   │       import { Input } from "@/components/ui/input";
+│   │       import { Textarea } from "@/components/ui/textarea";
+│   │       import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+│   │       
+│   │       // Separate the wrapper into its own component file
+│   │       export const FormFieldLabel: React.FC<{
+│   │         label: string;
+│   │         required?: boolean;
+│   │         htmlFor?: string;
+│   │       }> = ({ label, required, htmlFor }) => (
+│   │         <label 
+│   │           htmlFor={htmlFor}
+│   │           className="text-sm font-medium text-gray-200"
+│   │         >
+│   │           {label}
+│   │           {required && <span className="text-red-500 ml-1">*</span>}
+│   │         </label>
+│   │       );
+│   │       
+│   │       // Field wrapper with error handling
+│   │       export const FormFieldWrapper: React.FC<{
+│   │         children: React.ReactNode;
+│   │         label: string;
+│   │         required?: boolean;
+│   │         error?: string;
+│   │         htmlFor?: string;
+│   │       }> = ({ children, label, required, error, htmlFor }) => (
+│   │         <div className="space-y-2">
+│   │           <FormFieldLabel label={label} required={required} htmlFor={htmlFor} />
+│   │           {children}
+│   │           {error && <p className="text-sm text-red-500">{error}</p>}
+│   │         </div>
+│   │       );
+│   │       
+│   │       // Main FormField component
+│   │       export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(({
+│   │         field,
+│   │         value,
+│   │         onChange,
+│   │         onBlur,
+│   │         error,
+│   │         touched
+│   │       }, ref) => {
+│   │         if (!field) {
+│   │           return null;
+│   │         }
+│   │       
+│   │         const handleChange = (newValue: string) => {
+│   │           onChange?.(field.name, newValue);
+│   │         };
+│   │       
+│   │         const handleBlur = () => {
+│   │           onBlur?.(field.name);
+│   │         };
+│   │       
+│   │         const commonProps = {
+│   │           id: field.name,
+│   │           name: field.name,
+│   │           value: value ?? '',
+│   │           onChange: (e: React.ChangeEvent<any>) => handleChange(e.target.value),
+│   │           onBlur: handleBlur,
+│   │           required: field.required,
+│   │           disabled: field.disabled,
+│   │           placeholder: field.placeholder,
+│   │           className: field.className,
+│   │         };
+│   │       
+│   │         const renderInput = () => {
+│   │           switch (field.type) {
+│   │             case 'textarea':
+│   │               return (
+│   │                 <Textarea
+│   │                   {...commonProps}
+│   │                   rows={field.rows}
+│   │                 />
+│   │               );
+│   │       
+│   │             case 'select':
+│   │               return (
+│   │                 <Select
+│   │                   value={value ?? ''}
+│   │                   onValueChange={handleChange}
+│   │                   disabled={field.disabled}
+│   │                 >
+│   │                   <SelectTrigger>
+│   │                     <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
+│   │                   </SelectTrigger>
+│   │                   <SelectContent>
+│   │                     {field.options?.map((option) => (
+│   │                       <SelectItem key={option.value} value={option.value}>
+│   │                         {option.label}
+│   │                       </SelectItem>
+│   │                     ))}
+│   │                   </SelectContent>
+│   │                 </Select>
+│   │               );
+│   │       
+│   │             case 'number':
+│   │               return (
+│   │                 <Input
+│   │                   {...commonProps}
+│   │                   type="number"
+│   │                   min={field.min}
+│   │                   max={field.max}
+│   │                   step={field.step}
+│   │                 />
+│   │               );
+│   │       
+│   │             case 'date':
+│   │             case 'datetime-local':
+│   │               return (
+│   │                 <Input
+│   │                   {...commonProps}
+│   │                   type={field.type}
+│   │                   min={field.min}
+│   │                   max={field.max}
+│   │                 />
+│   │               );
+│   │       
+│   │             default:
+│   │               return (
+│   │                 <Input
+│   │                   {...commonProps}
+│   │                   type="text"
+│   │                 />
+│   │               );
+│   │           }
+│   │         };
+│   │       
+│   │         return (
+│   │           <FormFieldWrapper
+│   │             label={field.label}
+│   │             required={field.required}
+│   │             error={error}
+│   │             htmlFor={field.name}
+│   │           >
+│   │             {renderInput()}
+│   │           </FormFieldWrapper>
+│   │         );
+│   │       });
+│   │       
+│   │       FormField.displayName = 'FormField';
+│   └── index.ts
+│           // src/components/forms/fields/index.ts
+│           export { FormField, FormFieldWrapper, FormFieldLabel } from './FormField';
+│           export * from './FormButton';
+└── index.ts
+        
+        // src/components/forms/index.ts
+        to be removed        export * from './ProjectForm'; 
+        to be removed        export * from './ObjectiveForm';
+        to be removed        export * from './TaskForm';
+        to be removed        export * from './TimeEntryForm';
+        to be removed        export * from './TodoListForm';
+        export * from './BaseForm';
+        export * from './fields/FormField';
