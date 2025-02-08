@@ -6,3 +6,4 @@ export * from './switch';
 export * from './textarea';
 export * from './card';
 export * from './modal';
+export * from './timeline';
