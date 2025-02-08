@@ -10,7 +10,7 @@ import { QuickAddDialogs } from '@/components/dialogs';
 import { PROJECT_STATUS, TASK_STATUS } from '@/constants';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, FileEdit } from 'lucide-react';
+import { Menu, FileEdit, Clock } from 'lucide-react';
 
 export default function Home() {
   const { 
@@ -112,6 +112,9 @@ export default function Home() {
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/todo">Todo</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/timeline">Timeline</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="flex items-center gap-2">
               <Link href="/notepad">

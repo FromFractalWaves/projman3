@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import Timeline from '@/components/ui/timeline/Timeline';
+import { Timeline } from '@/components/ui/timeline/Timeline';
 import { useProjects } from '@/hooks/useProjects';
 import { useObjectives } from '@/hooks/useObjectives';
 import { useTasks } from '@/hooks/useTasks';
