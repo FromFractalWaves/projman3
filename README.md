@@ -1,10 +1,3 @@
-this is a start
-
-
-add stuff about tracking ai assisted workflow but also my own interconnected way forward.
-
-hmm should i tell people this needs ctree to work faster? automation right?# Project Management Dashboard
-
 A modern, feature-rich project management dashboard built with Next.js, React, and TypeScript. Manage projects, objectives, tasks, and time entries with an intuitive user interface.
 
 ## Features
