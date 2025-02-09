@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "clean": "rm -rf node_modules .next *-lock* && pnpm store prune",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
