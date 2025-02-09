@@ -1,7 +1,7 @@
 // src/hooks/useTimeline.ts
 import { useMemo } from 'react';
-import { Project, Objective, Task } from '@/types';
-import { TimelineEvent } from '@/types/timeline';
+import type { Project, Objective, Task } from '@/types';
+import type { TimelineEvent } from '@/types/timeline';
 
 interface UseTimelineOptions {
   projects: Project[];
@@ -58,7 +58,7 @@ export function useTimeline({ projects, objectives, tasks }: UseTimelineOptions)
   return { events };
 }
 
-// Helper functions to determine status
+// Helper functions
 function getStatusFromProject(project: Project): TimelineEvent['status'] {
   switch (project.status) {
     case 'completed':

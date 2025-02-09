@@ -7,6 +7,7 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
+import { useTimeline } from '@/hooks';
 
 export interface DashboardLayoutProps {
   projects: Project[];
@@ -85,6 +86,7 @@ const TaskList = ({ tasks }: { tasks: Task[] }) => (
   </div>
 );
 
+
 export function DashboardLayout({
   projects,
   objectives,
@@ -93,6 +95,12 @@ export function DashboardLayout({
   taskStats,
   onRefresh
 }: DashboardLayoutProps) {
+  // Get timeline events
+  const { events } = useTimeline({ projects, objectives, tasks });
+  const recentEvents = events
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
   const stats = useMemo(() => [
     {
       label: 'Total Tasks',
@@ -157,27 +165,45 @@ export function DashboardLayout({
         </Card>
       </div>
 
-      {/* Todo Lists Section */}
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-white">Todo Lists</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {todoLists.map(list => (
-              <div 
-                key={list.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:bg-zinc-800/80 transition-colors"
-              >
-                <h3 className="font-semibold text-white">{list.name}</h3>
-                <p className="text-sm text-zinc-300 mt-1">
-                  {list.tasks?.length || 0} tasks
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Todo Lists Section */}
+        <Card className="bg-zinc-900 border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-white">Todo Lists</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {todoLists.map(list => (
+                <div 
+                  key={list.id}
+                  className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:bg-zinc-800/80 transition-colors"
+                >
+                  <h3 className="font-semibold text-white">{list.name}</h3>
+                  <p className="text-sm text-zinc-300 mt-1">
+                    {list.tasks?.length || 0} tasks
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Timeline Section */}
+        <Card className="bg-zinc-900 border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-white">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Timeline 
+              events={recentEvents} 
+              onEventClick={(event) => {
+                // Handle click events if needed
+                console.log('Timeline event clicked:', event);
+              }} 
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
