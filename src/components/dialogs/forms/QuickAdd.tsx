@@ -1,10 +1,9 @@
-// src/components/dialogs/forms/QuickAdd.tsx
 import React from 'react';
+import { useForm } from '@/hooks/forms/useForm';
+import { FormField } from '@/components/forms/fields';
 import { FormDialog } from '@/components/dialogs/base/FormDialog';
 import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/forms/fields';
 import type { FieldConfig } from '@/types/forms/fields';
-import { useForm } from '@/hooks/forms/useForm';
 
 interface QuickAddButtonProps {
   onClick: () => void;
@@ -15,7 +14,7 @@ interface QuickAddButtonProps {
 const QuickAddButton = ({ onClick, icon, label }: QuickAddButtonProps) => (
   <Button
     variant="outline"
-    className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-neutral-800/50 hover:bg-neutral-800"
+    className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-zinc-900/50 hover:bg-zinc-900 border-zinc-800"
     onClick={onClick}
   >
     {icon}

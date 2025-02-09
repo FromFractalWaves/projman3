@@ -1,14 +1,6 @@
 // src/hooks/forms/useForm.ts
 import { useState, useCallback } from 'react';
-import type { FieldValue, FieldConfig } from '@/types/forms/fields';
-
-interface FormState<T> {
-  values: T;
-  errors: Record<string, string>;
-  touched: Record<keyof T, boolean>;
-  isSubmitting: boolean;
-  isDirty: boolean;
-}
+import type { FormState, FormHandlers, UseFormReturn } from '@/types/forms';
 
 interface UseFormOptions<T> {
   initialValues: T;
@@ -16,34 +8,6 @@ interface UseFormOptions<T> {
   validate?: (values: T) => Record<string, string>;
   validateOnChange?: boolean;
   validateOnBlur?: boolean;
-}
-
-interface UseFormReturn<T> {
-  // Form state
-  values: T;
-  errors: Record<string, string>;
-  touched: Record<keyof T, boolean>;
-  isSubmitting: boolean;
-  isDirty: boolean;
-  isValid: boolean;
-
-  // Event handlers
-  handleChange: (name: string, value: any) => void;
-  handleBlur: (name: string) => void;
-  handleSubmit: (e: React.FormEvent) => Promise<void>;
-
-  // Field helpers
-  setFieldValue: (field: keyof T, value: any) => void;
-  setFieldError: (field: keyof T, error: string) => void;
-  setFieldTouched: (field: keyof T, isTouched?: boolean) => void;
-
-  // Form helpers
-  resetForm: () => void;
-  validateForm: () => Promise<Record<string, string>>;
-  validateField: (field: keyof T) => Promise<string | undefined>;
-  setValues: (values: T) => void;
-  setErrors: (errors: Record<string, string>) => void;
-  setTouched: (touched: Record<keyof T, boolean>) => void;
 }
 
 export function useForm<T extends Record<string, any>>({
@@ -124,11 +88,17 @@ export function useForm<T extends Record<string, any>>({
     }));
   }, []);
 
-  const handleChange = useCallback((name: string, value: any) => {
+  const handleChange = useCallback((
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
     setFieldValue(name as keyof T, value);
   }, [setFieldValue]);
 
-  const handleBlur = useCallback((name: string) => {
+  const handleBlur = useCallback((
+    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name } = e.target;
     setFieldTouched(name as keyof T, true);
     
     if (validateOnBlur) {
@@ -146,12 +116,11 @@ export function useForm<T extends Record<string, any>>({
     });
   }, [initialValues]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormState(prev => ({ ...prev, isSubmitting: true }));
 
     try {
-      // Validate all fields
       const errors = await validateForm();
       
       if (Object.keys(errors).length === 0) {
@@ -171,6 +140,7 @@ export function useForm<T extends Record<string, any>>({
     // Form state
     ...formState,
     isValid,
+    submitCount: 0,
 
     // Event handlers
     handleChange,

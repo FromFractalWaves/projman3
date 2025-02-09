@@ -110,10 +110,16 @@ export function useForm<T extends Record<string, any>>({
     });
   }, [initialValues]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
+    // Ensure we prevent default if an event is passed
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
+
     setFormState(prev => ({ ...prev, isSubmitting: true }));
 
     try {
+      // Validate all fields
       const errors = await validateForm();
       
       if (Object.keys(errors).length === 0) {
@@ -133,6 +139,7 @@ export function useForm<T extends Record<string, any>>({
     // Form state
     ...formState,
     isValid,
+    submitCount: 0, // Added to match interface
 
     // Event handlers
     handleChange,
