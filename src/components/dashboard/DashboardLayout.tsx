@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Timeline } from '@/components/ui/timeline';
+import { useTimeline } from '@/hooks/useTimeline';
 import type { Project, Objective, Task, TodoList } from '@/types';
 import { 
   LayoutGrid,
@@ -7,7 +9,7 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { useTimeline } from '@/hooks';
+import { useRouter } from 'next/navigation';
 
 export interface DashboardLayoutProps {
   projects: Project[];
@@ -22,7 +24,7 @@ export interface DashboardLayoutProps {
   onRefresh: () => Promise<void>;
 }
 
-// Stats Card Component
+// Stats Card Component - Keeping it inline as in your code
 const StatsCard = ({ label, value, icon, color }: { 
   label: string;
   value: number | string;
@@ -40,7 +42,7 @@ const StatsCard = ({ label, value, icon, color }: {
   </div>
 );
 
-// Project Card Component
+// Project Card Component - Keeping it inline as in your code
 const ProjectCard = ({ project }: { project: Project }) => (
   <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:bg-zinc-800/80 transition-colors">
     <h3 className="font-semibold text-lg text-white">{project.name}</h3>
@@ -62,7 +64,7 @@ const ProjectCard = ({ project }: { project: Project }) => (
   </div>
 );
 
-// Task List Component
+// Task List Component - Keeping it inline as in your code
 const TaskList = ({ tasks }: { tasks: Task[] }) => (
   <div className="space-y-2">
     {tasks.map(task => (
@@ -86,7 +88,6 @@ const TaskList = ({ tasks }: { tasks: Task[] }) => (
   </div>
 );
 
-
 export function DashboardLayout({
   projects,
   objectives,
@@ -95,7 +96,9 @@ export function DashboardLayout({
   taskStats,
   onRefresh
 }: DashboardLayoutProps) {
-  // Get timeline events
+  const router = useRouter();
+  
+  // Get timeline events using the hook
   const { events } = useTimeline({ projects, objectives, tasks });
   const recentEvents = events
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -131,6 +134,20 @@ export function DashboardLayout({
   const recentTasks = tasks
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
+
+  const handleTimelineEventClick = (event) => {
+    switch (event.type) {
+      case 'project':
+        router.push(`/projects/${event.entityId}`);
+        break;
+      case 'objective':
+        router.push(`/objectives/${event.entityId}`);
+        break;
+      case 'task':
+        router.push(`/tasks/${event.entityId}`);
+        break;
+    }
+  };
 
   return (
     <div className="space-y-6 p-6 bg-black min-h-screen">
@@ -196,10 +213,7 @@ export function DashboardLayout({
           <CardContent>
             <Timeline 
               events={recentEvents} 
-              onEventClick={(event) => {
-                // Handle click events if needed
-                console.log('Timeline event clicked:', event);
-              }} 
+              onEventClick={handleTimelineEventClick}
             />
           </CardContent>
         </Card>
