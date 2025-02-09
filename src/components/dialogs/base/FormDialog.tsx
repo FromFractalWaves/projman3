@@ -17,11 +17,6 @@ export function FormDialog<T extends Record<string, any>>({
   onOpenChange,
   children,
 }: FormDialogProps<T>) {
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSubmit(form.values);
-  };
-
   return (
     <BaseDialog
       title={title}
@@ -30,22 +25,22 @@ export function FormDialog<T extends Record<string, any>>({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={form.handleSubmit} className="space-y-4">
         {children}
         <div className="mt-4 flex justify-end gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange?.(false)}
-            disabled={isSubmitting}
+            disabled={form.isSubmitting}
           >
             {cancelLabel}
           </Button>
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={form.isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : submitLabel}
+            {form.isSubmitting ? 'Saving...' : submitLabel}
           </Button>
         </div>
       </form>
