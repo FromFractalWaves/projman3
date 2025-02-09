@@ -1,0 +1,726 @@
+dialogs/
+├── base/
+│   ├── BaseDialog.tsx
+│   │       // src/components/dialogs/base/BaseDialog.tsx
+│   │       import React from 'react';
+│   │       import {
+│   │         Dialog,
+│   │         DialogContent,
+│   │         DialogDescription,
+│   │         DialogHeader,
+│   │         DialogTitle,
+│   │         DialogTrigger,
+│   │       } from "@/components/ui/dialog";
+│   │       import type { BaseDialogProps } from '@/types/dialogs';
+│   │       import { cn } from '@/lib/utils';
+│   │       
+│   │       export function BaseDialog({
+│   │         title,
+│   │         description,
+│   │         trigger,
+│   │         isOpen,
+│   │         onOpenChange,
+│   │         children,
+│   │         className,
+│   │       }: BaseDialogProps) {
+│   │         return (
+│   │           <Dialog open={isOpen} onOpenChange={onOpenChange}>
+│   │             <DialogTrigger asChild>
+│   │               {trigger}
+│   │             </DialogTrigger>
+│   │             <DialogContent className={cn("sm:max-w-[425px]", className)}>
+│   │               <DialogHeader>
+│   │                 <DialogTitle>{title}</DialogTitle>
+│   │                 {description && (
+│   │                   <DialogDescription>{description}</DialogDescription>
+│   │                 )}
+│   │               </DialogHeader>
+│   │               {children}
+│   │             </DialogContent>
+│   │           </Dialog>
+│   │         );
+│   │       }
+│   ├── ConfirmDialog.tsx
+│   │       // src/components/dialogs/base/ConfirmDialog.tsx
+│   │       import React from 'react';
+│   │       import { Button } from '@/components/ui/button';
+│   │       import type { ConfirmDialogProps } from '@/types/dialogs';
+│   │       import { BaseDialog } from './BaseDialog';
+│   │       
+│   │       export function ConfirmDialog({
+│   │         title,
+│   │         description,
+│   │         trigger,
+│   │         confirmLabel = 'Confirm',
+│   │         cancelLabel = 'Cancel',
+│   │         onConfirm,
+│   │         variant = 'default',
+│   │         isOpen,
+│   │         onOpenChange,
+│   │       }: ConfirmDialogProps) {
+│   │         const [isSubmitting, setIsSubmitting] = React.useState(false);
+│   │       
+│   │         const handleConfirm = async () => {
+│   │           setIsSubmitting(true);
+│   │           try {
+│   │             await onConfirm();
+│   │             onOpenChange?.(false);
+│   │           } finally {
+│   │             setIsSubmitting(false);
+│   │           }
+│   │         };
+│   │       
+│   │         return (
+│   │           <BaseDialog
+│   │             title={title}
+│   │             description={description}
+│   │             trigger={trigger}
+│   │             isOpen={isOpen}
+│   │             onOpenChange={onOpenChange}
+│   │           >
+│   │             <div className="mt-4 flex justify-end gap-3">
+│   │               <Button
+│   │                 variant="outline"
+│   │                 onClick={() => onOpenChange?.(false)}
+│   │                 disabled={isSubmitting}
+│   │               >
+│   │                 {cancelLabel}
+│   │               </Button>
+│   │               <Button
+│   │                 variant={variant}
+│   │                 onClick={handleConfirm}
+│   │                 disabled={isSubmitting}
+│   │               >
+│   │                 {isSubmitting ? 'Processing...' : confirmLabel}
+│   │               </Button>
+│   │             </div>
+│   │           </BaseDialog>
+│   │         );
+│   │       }
+│   ├── FormDialog.tsx
+│   │       // src/components/dialogs/base/FormDialog.tsx
+│   │       import React from 'react';
+│   │       import { Button } from '@/components/ui/button';
+│   │       import type { FormDialogProps } from '@/types/dialogs';
+│   │       import { BaseDialog } from './BaseDialog';
+│   │       
+│   │       export function FormDialog<T extends Record<string, any>>({
+│   │         title,
+│   │         description,
+│   │         trigger,
+│   │         form,
+│   │         submitLabel = 'Save',
+│   │         cancelLabel = 'Cancel',
+│   │         isSubmitting,
+│   │         onSubmit,
+│   │         isOpen,
+│   │         onOpenChange,
+│   │         children,
+│   │       }: FormDialogProps<T>) {
+│   │         const handleSubmit = async (e: React.FormEvent) => {
+│   │           e.preventDefault();
+│   │           await onSubmit(form.values);
+│   │         };
+│   │       
+│   │         return (
+│   │           <BaseDialog
+│   │             title={title}
+│   │             description={description}
+│   │             trigger={trigger}
+│   │             isOpen={isOpen}
+│   │             onOpenChange={onOpenChange}
+│   │           >
+│   │             <form onSubmit={handleSubmit} className="space-y-4">
+│   │               {children}
+│   │               <div className="mt-4 flex justify-end gap-3">
+│   │                 <Button
+│   │                   type="button"
+│   │                   variant="outline"
+│   │                   onClick={() => onOpenChange?.(false)}
+│   │                   disabled={isSubmitting}
+│   │                 >
+│   │                   {cancelLabel}
+│   │                 </Button>
+│   │                 <Button
+│   │                   type="submit"
+│   │                   disabled={isSubmitting}
+│   │                 >
+│   │                   {isSubmitting ? 'Saving...' : submitLabel}
+│   │                 </Button>
+│   │               </div>
+│   │             </form>
+│   │           </BaseDialog>
+│   │         );
+│   │       }
+│   └── index.ts
+│           export * from './BaseDialog';
+│           export * from './ConfirmDialog';
+│           export * from './FormDialog';
+├── forms/
+│   ├── QuickAdd.tsx
+│   │       import React from 'react';
+│   │       import { useForm } from '@/hooks/forms/useForm';
+│   │       import { FormField } from '@/components/forms/fields';
+│   │       import { FormDialog } from '@/components/dialogs/base/FormDialog';
+│   │       import { Button } from '@/components/ui/button';
+│   │       import type { FieldConfig } from '@/types/forms/fields';
+│   │       
+│   │       interface QuickAddButtonProps {
+│   │         onClick: () => void;
+│   │         icon: React.ReactNode;
+│   │         label: string;
+│   │       }
+│   │       
+│   │       const QuickAddButton = ({ onClick, icon, label }: QuickAddButtonProps) => (
+│   │         <Button
+│   │           variant="outline"
+│   │           className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-zinc-900/50 hover:bg-zinc-900 border-zinc-800"
+│   │           onClick={onClick}
+│   │         >
+│   │           {icon}
+│   │           <span>{label}</span>
+│   │         </Button>
+│   │       );
+│   │       
+│   │       interface QuickAddProps<T> {
+│   │         title: string;
+│   │         description: string;
+│   │         icon: React.ReactNode;
+│   │         label: string;
+│   │         fields: FieldConfig[];
+│   │         initialValues: T;
+│   │         isOpen: boolean;
+│   │         onOpenChange: (open: boolean) => void;
+│   │         onSubmit: (values: T) => Promise<void>;
+│   │       }
+│   │       
+│   │       export function QuickAdd<T extends Record<string, any>>({
+│   │         title,
+│   │         description,
+│   │         icon,
+│   │         label,
+│   │         fields,
+│   │         initialValues,
+│   │         isOpen,
+│   │         onOpenChange,
+│   │         onSubmit,
+│   │       }: QuickAddProps<T>) {
+│   │         const form = useForm<T>({
+│   │           initialValues,
+│   │           onSubmit: async (values) => {
+│   │             await onSubmit(values);
+│   │             onOpenChange(false);
+│   │           },
+│   │         });
+│   │       
+│   │         return (
+│   │           <FormDialog
+│   │             title={title}
+│   │             description={description}
+│   │             trigger={
+│   │               <QuickAddButton 
+│   │                 onClick={() => onOpenChange(true)}
+│   │                 icon={icon}
+│   │                 label={label}
+│   │               />
+│   │             }
+│   │             form={form}
+│   │             isOpen={isOpen}
+│   │             onOpenChange={onOpenChange}
+│   │             onSubmit={form.handleSubmit}
+│   │             submitLabel={`Create ${label.split(' ')[1]}`} // "Add Project" -> "Create Project"
+│   │           >
+│   │             <div className="space-y-4 py-4">
+│   │               {fields.map((field) => (
+│   │                 <FormField
+│   │                   key={field.name}
+│   │                   field={field}
+│   │                   value={form.values[field.name]}
+│   │                   onChange={form.setFieldValue}
+│   │                   onBlur={form.handleBlur}
+│   │                   error={form.errors[field.name]}
+│   │                   touched={form.touched[field.name]}
+│   │                 />
+│   │               ))}
+│   │             </div>
+│   │           </FormDialog>
+│   │         );
+│   │       }
+│   ├── QuickAddDialogs.tsx
+│   │       // src/components/dialogs/forms/QuickAddDialogs.tsx
+│   │       import React from 'react';
+│   │       import { QuickAdd } from './QuickAdd';
+│   │       import { ProjectFields, ObjectiveFields, TaskFields, TimeEntryFields } from './QuickAddFields';
+│   │       import { Folder, Target, CheckSquare, Clock } from 'lucide-react';
+│   │       import type { 
+│   │         ProjectFormData, 
+│   │         ObjectiveFormData, 
+│   │         TaskFormData, 
+│   │         TimeEntryFormData 
+│   │       } from '@/types';
+│   │       import { PROJECT_STATUS, TASK_STATUS } from '@/constants';
+│   │       
+│   │       interface QuickAddDialogsProps {
+│   │         projects: any[];
+│   │         objectives: any[];
+│   │         tasks: any[];
+│   │         onProjectAdd: (data: ProjectFormData) => Promise<void>;
+│   │         onObjectiveAdd: (data: ObjectiveFormData) => Promise<void>;
+│   │         onTaskAdd: (data: TaskFormData) => Promise<void>;
+│   │         onTimeEntryAdd: (data: TimeEntryFormData) => Promise<void>;
+│   │       }
+│   │       
+│   │       export function QuickAddDialogs({
+│   │         projects,
+│   │         objectives,
+│   │         tasks,
+│   │         onProjectAdd,
+│   │         onObjectiveAdd,
+│   │         onTaskAdd,
+│   │         onTimeEntryAdd
+│   │       }: QuickAddDialogsProps) {
+│   │         const [activeDialog, setActiveDialog] = React.useState<string | null>(null);
+│   │       
+│   │         // Initial values for forms
+│   │         const initialValues = {
+│   │           project: {
+│   │             name: '',
+│   │             description: '',
+│   │             status: PROJECT_STATUS.NOT_STARTED,
+│   │             startDate: '',
+│   │             dueDate: '',
+│   │             estimatedHours: ''
+│   │           },
+│   │           objective: {
+│   │             name: '',
+│   │             description: '',
+│   │             projectId: '',
+│   │             status: PROJECT_STATUS.NOT_STARTED,
+│   │             startDate: '',
+│   │             dueDate: '',
+│   │             estimatedHours: ''
+│   │           },
+│   │           task: {
+│   │             content: '',
+│   │             description: '',
+│   │             status: TASK_STATUS.TODO,
+│   │             priority: 'medium',
+│   │             projectId: '',
+│   │             objectiveId: '',
+│   │             startDate: '',
+│   │             dueDate: '',
+│   │             estimatedHours: '',
+│   │             actualHours: ''
+│   │           },
+│   │           timeEntry: {
+│   │             taskId: '',
+│   │             startTime: '',
+│   │             endTime: '',
+│   │             description: ''
+│   │           }
+│   │         };
+│   │       
+│   │         return (
+│   │           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+│   │             <QuickAdd
+│   │               title="Add New Project"
+│   │               description="Create a new project to organize your work."
+│   │               icon={<Folder className="h-6 w-6" />}
+│   │               label="Add Project"
+│   │               fields={ProjectFields}
+│   │               initialValues={initialValues.project}
+│   │               isOpen={activeDialog === 'project'}
+│   │               onOpenChange={(open) => setActiveDialog(open ? 'project' : null)}
+│   │               onSubmit={onProjectAdd}
+│   │             />
+│   │       
+│   │             <QuickAdd
+│   │               title="Add New Objective"
+│   │               description="Create a new objective for your project."
+│   │               icon={<Target className="h-6 w-6" />}
+│   │               label="Add Objective"
+│   │               fields={ObjectiveFields(projects)}
+│   │               initialValues={initialValues.objective}
+│   │               isOpen={activeDialog === 'objective'}
+│   │               onOpenChange={(open) => setActiveDialog(open ? 'objective' : null)}
+│   │               onSubmit={onObjectiveAdd}
+│   │             />
+│   │       
+│   │             <QuickAdd
+│   │               title="Add New Task"
+│   │               description="Create a new task for your project or objective."
+│   │               icon={<CheckSquare className="h-6 w-6" />}
+│   │               label="Add Task"
+│   │               fields={TaskFields(projects, objectives)}
+│   │               initialValues={initialValues.task}
+│   │               isOpen={activeDialog === 'task'}
+│   │               onOpenChange={(open) => setActiveDialog(open ? 'task' : null)}
+│   │               onSubmit={onTaskAdd}
+│   │             />
+│   │       
+│   │             <QuickAdd
+│   │               title="Add Time Entry"
+│   │               description="Track time spent on a task."
+│   │               icon={<Clock className="h-6 w-6" />}
+│   │               label="Add Time"
+│   │               fields={TimeEntryFields(tasks)}
+│   │               initialValues={initialValues.timeEntry}
+│   │               isOpen={activeDialog === 'time'}
+│   │               onOpenChange={(open) => setActiveDialog(open ? 'time' : null)}
+│   │               onSubmit={onTimeEntryAdd}
+│   │             />
+│   │           </div>
+│   │         );
+│   │       }
+│   ├── QuickAddFields.tsx
+│   │       // src/components/dialogs/forms/QuickAddFields.tsx
+│   │       import React from 'react';
+│   │       import { FormField } from '@/components/forms/fields';
+│   │       import type { FieldConfig } from '@/types/forms/fields';
+│   │       
+│   │       export const ProjectFields: FieldConfig[] = [
+│   │         {
+│   │           name: 'name',
+│   │           type: 'text',
+│   │           label: 'Project Name',
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'description',
+│   │           type: 'textarea',
+│   │           label: 'Description',
+│   │           rows: 3,
+│   │         },
+│   │         {
+│   │           name: 'status',
+│   │           type: 'select',
+│   │           label: 'Status',
+│   │           options: [
+│   │             { value: 'not-started', label: 'Not Started' },
+│   │             { value: 'active', label: 'Active' },
+│   │             { value: 'completed', label: 'Completed' },
+│   │           ],
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'startDate',
+│   │           type: 'date',
+│   │           label: 'Start Date',
+│   │         },
+│   │         {
+│   │           name: 'dueDate',
+│   │           type: 'date',
+│   │           label: 'Due Date',
+│   │         },
+│   │         {
+│   │           name: 'estimatedHours',
+│   │           type: 'number',
+│   │           label: 'Estimated Hours',
+│   │           min: 0,
+│   │           step: 0.5,
+│   │         },
+│   │       ];
+│   │       
+│   │       export const ObjectiveFields = (projects: any[]): FieldConfig[] => [
+│   │         {
+│   │           name: 'projectId',
+│   │           type: 'select',
+│   │           label: 'Project',
+│   │           options: projects.map(p => ({ value: p.id, label: p.name })),
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'name',
+│   │           type: 'text',
+│   │           label: 'Objective Name',
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'description',
+│   │           type: 'textarea',
+│   │           label: 'Description',
+│   │           rows: 3,
+│   │         },
+│   │         {
+│   │           name: 'status',
+│   │           type: 'select',
+│   │           label: 'Status',
+│   │           options: [
+│   │             { value: 'not-started', label: 'Not Started' },
+│   │             { value: 'active', label: 'Active' },
+│   │             { value: 'completed', label: 'Completed' },
+│   │           ],
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'startDate',
+│   │           type: 'date',
+│   │           label: 'Start Date',
+│   │         },
+│   │         {
+│   │           name: 'dueDate',
+│   │           type: 'date',
+│   │           label: 'Due Date',
+│   │         },
+│   │         {
+│   │           name: 'estimatedHours',
+│   │           type: 'number',
+│   │           label: 'Estimated Hours',
+│   │           min: 0,
+│   │           step: 0.5,
+│   │         },
+│   │       ];
+│   │       
+│   │       export const TaskFields = (projects: any[], objectives: any[]): FieldConfig[] => [
+│   │         {
+│   │           name: 'content',
+│   │           type: 'text',
+│   │           label: 'Task Content',
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'description',
+│   │           type: 'textarea',
+│   │           label: 'Description',
+│   │           rows: 3,
+│   │         },
+│   │         {
+│   │           name: 'projectId',
+│   │           type: 'select',
+│   │           label: 'Project',
+│   │           options: projects.map(p => ({ value: p.id, label: p.name })),
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'objectiveId',
+│   │           type: 'select',
+│   │           label: 'Objective',
+│   │           options: objectives.map(o => ({ value: o.id, label: o.name })),
+│   │         },
+│   │         {
+│   │           name: 'status',
+│   │           type: 'select',
+│   │           label: 'Status',
+│   │           options: [
+│   │             { value: 'todo', label: 'Todo' },
+│   │             { value: 'in-progress', label: 'In Progress' },
+│   │             { value: 'done', label: 'Done' },
+│   │           ],
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'priority',
+│   │           type: 'select',
+│   │           label: 'Priority',
+│   │           options: [
+│   │             { value: 'low', label: 'Low' },
+│   │             { value: 'medium', label: 'Medium' },
+│   │             { value: 'high', label: 'High' },
+│   │           ],
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'startDate',
+│   │           type: 'date',
+│   │           label: 'Start Date',
+│   │         },
+│   │         {
+│   │           name: 'dueDate',
+│   │           type: 'date',
+│   │           label: 'Due Date',
+│   │         },
+│   │         {
+│   │           name: 'estimatedHours',
+│   │           type: 'number',
+│   │           label: 'Estimated Hours',
+│   │           min: 0,
+│   │           step: 0.5,
+│   │         },
+│   │         {
+│   │           name: 'actualHours',
+│   │           type: 'number',
+│   │           label: 'Actual Hours',
+│   │           min: 0,
+│   │           step: 0.5,
+│   │         },
+│   │       ];
+│   │       
+│   │       export const TimeEntryFields = (tasks: any[]): FieldConfig[] => [
+│   │         {
+│   │           name: 'taskId',
+│   │           type: 'select',
+│   │           label: 'Task',
+│   │           options: tasks.map(t => ({ value: t.id, label: t.content })),
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'startTime',
+│   │           type: 'datetime-local',
+│   │           label: 'Start Time',
+│   │           required: true,
+│   │         },
+│   │         {
+│   │           name: 'endTime',
+│   │           type: 'datetime-local',
+│   │           label: 'End Time',
+│   │         },
+│   │         {
+│   │           name: 'description',
+│   │           type: 'textarea',
+│   │           label: 'Description',
+│   │           rows: 3,
+│   │         },
+│   │       ];
+│   ├── QuickAddSelection.tsx
+│   │       import React from 'react';
+│   │       import { Button } from '@/components/ui/button';
+│   │       import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/ui/dialog';
+│   │       import { Input } from '@/components/ui/input';
+│   │       import { Textarea } from '@/components/ui/textarea';
+│   │       import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+│   │       import { FolderPlus, Target, ListTodo, Clock } from 'lucide-react';
+│   │       
+│   │       const QuickAddButton = ({ 
+│   │         label, 
+│   │         icon: Icon, 
+│   │         onClick 
+│   │       }: { 
+│   │         label: string;
+│   │         icon: React.ElementType;
+│   │         onClick: () => void;
+│   │       }) => (
+│   │         <Button
+│   │           variant="outline"
+│   │           className="h-24 flex flex-col items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-white"
+│   │           onClick={onClick}
+│   │         >
+│   │           <Icon className="h-6 w-6 text-zinc-300" />
+│   │           <span className="text-sm">{label}</span>
+│   │         </Button>
+│   │       );
+│   │       
+│   │       const QuickAddDialog = ({
+│   │         isOpen,
+│   │         onClose,
+│   │         title,
+│   │         children
+│   │       }: {
+│   │         isOpen: boolean;
+│   │         onClose: () => void;
+│   │         title: string;
+│   │         children: React.ReactNode;
+│   │       }) => (
+│   │         <Dialog open={isOpen} onOpenChange={onClose}>
+│   │           <DialogContent className="bg-zinc-900 border-zinc-800">
+│   │             <DialogHeader>
+│   │               <DialogTitle className="text-white">{title}</DialogTitle>
+│   │             </DialogHeader>
+│   │             {children}
+│   │           </DialogContent>
+│   │         </Dialog>
+│   │       );
+│   │       
+│   │       export function QuickAddSection() {
+│   │         const [activeDialog, setActiveDialog] = React.useState<string | null>(null);
+│   │       
+│   │         const closeDialog = () => setActiveDialog(null);
+│   │       
+│   │         return (
+│   │           <div className="p-4 bg-black">
+│   │             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+│   │               <QuickAddButton
+│   │                 label="Add Project"
+│   │                 icon={FolderPlus}
+│   │                 onClick={() => setActiveDialog('project')}
+│   │               />
+│   │               <QuickAddButton
+│   │                 label="Add Objective"
+│   │                 icon={Target}
+│   │                 onClick={() => setActiveDialog('objective')}
+│   │               />
+│   │               <QuickAddButton
+│   │                 label="Add Task"
+│   │                 icon={ListTodo}
+│   │                 onClick={() => setActiveDialog('task')}
+│   │               />
+│   │               <QuickAddButton
+│   │                 label="Add Time Entry"
+│   │                 icon={Clock}
+│   │                 onClick={() => setActiveDialog('time')}
+│   │               />
+│   │             </div>
+│   │       
+│   │             {/* Project Dialog */}
+│   │             <QuickAddDialog
+│   │               isOpen={activeDialog === 'project'}
+│   │               onClose={closeDialog}
+│   │               title="Add New Project"
+│   │             >
+│   │               <form className="space-y-4 pt-4">
+│   │                 <div className="space-y-2">
+│   │                   <label className="text-sm font-medium text-zinc-300">
+│   │                     Project Name
+│   │                   </label>
+│   │                   <Input 
+│   │                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+│   │                     placeholder="Enter project name"
+│   │                   />
+│   │                 </div>
+│   │                 
+│   │                 <div className="space-y-2">
+│   │                   <label className="text-sm font-medium text-zinc-300">
+│   │                     Description
+│   │                   </label>
+│   │                   <Textarea 
+│   │                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+│   │                     placeholder="Enter project description"
+│   │                   />
+│   │                 </div>
+│   │       
+│   │                 <div className="space-y-2">
+│   │                   <label className="text-sm font-medium text-zinc-300">
+│   │                     Status
+│   │                   </label>
+│   │                   <Select>
+│   │                     <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+│   │                       <SelectValue placeholder="Select status" />
+│   │                     </SelectTrigger>
+│   │                     <SelectContent className="bg-zinc-800 border-zinc-700">
+│   │                       <SelectItem value="not-started" className="text-white">Not Started</SelectItem>
+│   │                       <SelectItem value="in-progress" className="text-white">In Progress</SelectItem>
+│   │                       <SelectItem value="completed" className="text-white">Completed</SelectItem>
+│   │                     </SelectContent>
+│   │                   </Select>
+│   │                 </div>
+│   │       
+│   │                 <div className="pt-4 flex justify-end gap-3">
+│   │                   <Button
+│   │                     variant="outline"
+│   │                     onClick={closeDialog}
+│   │                     className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+│   │                   >
+│   │                     Cancel
+│   │                   </Button>
+│   │                   <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+│   │                     Create Project
+│   │                   </Button>
+│   │                 </div>
+│   │               </form>
+│   │             </QuickAddDialog>
+│   │       
+│   │             {/* Similar dialogs for Objective, Task, and Time Entry would follow */}
+│   │           </div>
+│   │         );
+│   │       }
+│   │       
+│   │       export default QuickAddSection;
+│   └── index.ts
+│           export * from './QuickAddFields';
+│           export * from './QuickAdd';
+│           export * from './QuickAddDialogs';
+│           export * from './QuickAddSelection';
+└── index.ts
+        export * from './forms/QuickAddDialogs';
+        export * from './forms/QuickAddFields';
+        export * from './forms/QuickAdd';
+        export * from './base'

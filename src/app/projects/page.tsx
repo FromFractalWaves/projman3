@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { Button } from '@/components/ui/button';
@@ -6,12 +8,15 @@ import { FormDialog } from '@/components/dialogs/base/FormDialog';
 import { ProjectFields } from '@/components/dialogs/forms/QuickAddFields';
 import { PROJECT_STATUS } from '@/constants';
 import { Folder, PlusCircle } from 'lucide-react';
+import { FormField } from '@/components/forms/fields';
+import { useForm } from '@/hooks/forms/useForm';
+import type { ProjectFormData } from '@/types';
 
 export default function ProjectsPage() {
   const { projects, createProject } = useProjects();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const initialValues = {
+  const initialValues: ProjectFormData = {
     name: '',
     description: '',
     status: PROJECT_STATUS.NOT_STARTED,
@@ -20,13 +25,23 @@ export default function ProjectsPage() {
     estimatedHours: ''
   };
 
-  const handleCreateProject = async (data) => {
-    try {
-      await createProject(data);
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error creating project:', error);
+  const form = useForm<ProjectFormData>({
+    initialValues,
+    onSubmit: async (data: ProjectFormData) => {
+      try {
+        await createProject(data);
+        setIsDialogOpen(false);
+      } catch (error) {
+        console.error('Error creating project:', error);
+      }
     }
+  });
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      form.resetForm();
+    }
+    setIsDialogOpen(open);
   };
 
   return (
@@ -44,23 +59,20 @@ export default function ProjectsPage() {
           }
           submitLabel="Create Project"
           isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          onSubmit={handleCreateProject}
-          form={{
-            initialValues,
-            onSubmit: handleCreateProject
-          }}
+          onOpenChange={handleOpenChange}
+          onSubmit={form.handleSubmit}
+          form={form}
         >
           <div className="space-y-4 py-4">
             {ProjectFields.map((field) => (
               <FormField
                 key={field.name}
                 field={field}
-                value={form.values[field.name]}
-                onChange={form.setFieldValue}
-                onBlur={form.handleBlur}
-                error={form.errors[field.name]}
-                touched={form.touched[field.name]}
+                value={form.values[field.name as keyof ProjectFormData]}
+                onChange={(name, value) => form.setFieldValue(name, value)}
+                onBlur={(name) => form.setFieldTouched(name)}
+                error={form.errors[field.name as keyof ProjectFormData]}
+                touched={form.touched[field.name as keyof ProjectFormData]}
               />
             ))}
           </div>

@@ -1,3 +1,5 @@
+'use client';
+
 // src/hooks/useProjects.ts
 import { useState, useEffect, useCallback } from 'react';
 import type { Project, ProjectFormData } from '@/types';

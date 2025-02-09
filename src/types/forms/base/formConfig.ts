@@ -1,9 +1,6 @@
-
-// src/types/forms/formConfig.ts
+// src/types/forms/base/formConfig.ts
 export interface FormConfig<T> {
-    initialValues: T;
-    onSubmit: (values: T) => Promise<void>;
-    validate?: (values: T) => Record<string, string>;
-    validateOnChange?: boolean;
-    validateOnBlur?: boolean;
-  }
+  initialValues: T;
+  onSubmit: (values: T) => Promise<void>;
+  validate?: (values: T) => Promise<Record<string, string>> | Record<string, string>;
+}
