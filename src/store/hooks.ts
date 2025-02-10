@@ -1,6 +1,6 @@
 // src/store/hooks.ts
 import { useCallback } from 'react'
-import { StoreState, useStore } from './index'
+import { useStore } from './index'
 import * as selectors from './selectors'
 import {
   Project,
@@ -14,6 +14,40 @@ import {
   TimeEntry,
   TimeEntryFormData
 } from '@/types'
+
+interface UseTasksReturn {
+  tasks: Task[];
+  loading: boolean;
+  error: Error | null;
+  createTask: (data: TaskFormData) => Promise<void>;
+  updateTask: (id: string, data: Partial<TaskFormData>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  fetchTasks: () => Promise<void>;
+  markTaskComplete: (id: string) => Promise<void>;
+}
+
+export const useTasks = (): UseTasksReturn => {
+  const tasks = useStore(selectors.selectTasks);
+  const loading = useStore(selectors.selectTasksLoading);
+  const error = useStore(selectors.selectTasksError);
+  const createTask = useStore((state) => state.createTask);
+  const updateTask = useStore((state) => state.updateTask);
+  const deleteTask = useStore((state) => state.deleteTask);
+  const fetchTasks = useStore((state) => state.fetchTasks);
+  const markTaskComplete = useStore((state) => state.markTaskComplete);
+
+  return {
+    tasks,
+    loading,
+    error,
+    createTask,
+    updateTask,
+    deleteTask,
+    fetchTasks,
+    markTaskComplete,
+  };
+};
+
 
 // Project Hook Return Types
 interface UseProjectsReturn {
@@ -182,27 +216,6 @@ export const useObjective = (id: string): UseObjectiveReturn => {
       () => deleteObjective(id),
       [id, deleteObjective]
     )
-  }
-}
-
-// Task Hooks
-export const useTasks = (): UseTasksReturn => {
-  const tasks = useStore(selectors.selectTasks)
-  const loading = useStore(selectors.selectTasksLoading)
-  const error = useStore(selectors.selectTasksError)
-  const createTask = useStore((state) => state.createTask)
-  const updateTask = useStore((state) => state.updateTask)
-  const deleteTask = useStore((state) => state.deleteTask)
-  const fetchTasks = useStore((state) => state.fetchTasks)
-
-  return {
-    tasks,
-    loading,
-    error,
-    createTask,
-    updateTask,
-    deleteTask,
-    fetchTasks
   }
 }
 

@@ -1,7 +1,6 @@
-
 // src/store/slices/tasks.ts
 import { StateCreator } from 'zustand';
-import { Task, TaskFormData } from '@/types';
+import type { Task, TaskFormData } from '@/types';
 import { tasksApi } from '@/lib/api/tasks';
 
 export interface TaskSlice {
