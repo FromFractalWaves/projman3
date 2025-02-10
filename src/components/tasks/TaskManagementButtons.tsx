@@ -1,78 +1,134 @@
 // src/components/tasks/TaskManagementButtons.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useTasks } from '@/store/hooks';
-import type { TaskFormData } from '@/types';
+import { 
+  PlayCircle, 
+  PauseCircle, 
+  CheckCircle,
+  AlertCircle,
+  Clock
+} from 'lucide-react';
+import { useTaskCompletion } from '@/hooks/useTaskCompletion';
+import { Task } from '@/types';
 
-const TaskManagementButtons: React.FC = () => {
-  // Get state and action methods from your store
-  const { tasks, fetchTasks, createTask, updateTask, deleteTask, markTaskComplete } = useTasks();
+interface TaskManagementButtonsProps {
+  task?: Task;
+  onStatusChange?: (status: string) => Promise<void>;
+  onTimeStart?: () => Promise<void>;
+  onTimePause?: () => Promise<void>;
+  className?: string;
+}
 
-  // Handler to refresh tasks
-  const handleFetchTasks = async () => {
-    await fetchTasks();
-  };
+const TaskManagementButtons: React.FC<TaskManagementButtonsProps> = ({
+  task,
+  onStatusChange,
+  onTimeStart,
+  onTimePause,
+  className
+}) => {
+  const { completeTask } = useTaskCompletion();
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  // Handler to create a new task (using dummy data; adjust as needed)
-  const handleCreateTask = async () => {
-    const newTaskData: TaskFormData = {
-      content: "New Task created at " + new Date().toLocaleTimeString(),
-      description: "This is a dummy task created for testing.",
-      projectId: "project-1", // Replace with a valid project ID from your data
-      objectiveId: "",
-      status: "todo",
-      priority: "medium",
-      startDate: new Date().toISOString(),
-      dueDate: new Date(Date.now() + 86400000).toISOString()
-    };
-    await createTask(newTaskData);
-  };
-
-  // Handler to update the first task (appends " (updated)" to its description)
-  const handleUpdateTask = async () => {
-    if (tasks.length === 0) {
-      alert("No tasks available to update.");
-      return;
+  const handleStatusChange = async (status: string) => {
+    if (!task || !onStatusChange) return;
+    
+    setIsLoading(true);
+    try {
+      await onStatusChange(status);
+    } catch (error) {
+      console.error('Failed to update task status:', error);
+    } finally {
+      setIsLoading(false);
     }
-    const task = tasks[0];
-    await updateTask(task.id, { description: task.description + " (updated)" });
   };
 
-  // Handler to delete the last task
-  const handleDeleteTask = async () => {
-    if (tasks.length === 0) {
-      alert("No tasks available to delete.");
-      return;
+  const handleTimeAction = async (action: 'start' | 'pause') => {
+    if (!task) return;
+    
+    setIsLoading(true);
+    try {
+      if (action === 'start' && onTimeStart) {
+        await onTimeStart();
+      } else if (action === 'pause' && onTimePause) {
+        await onTimePause();
+      }
+    } catch (error) {
+      console.error('Failed to update time tracking:', error);
+    } finally {
+      setIsLoading(false);
     }
-    const task = tasks[tasks.length - 1];
-    await deleteTask(task.id);
   };
 
-  // Handler to mark the first incomplete task as complete
-  const handleMarkTaskComplete = async () => {
-    const incompleteTask = tasks.find(t => t.status !== 'done');
-    if (!incompleteTask) {
-      alert("No incomplete task found.");
-      return;
+  const handleComplete = async () => {
+    if (!task) return;
+    
+    setIsLoading(true);
+    try {
+      await completeTask(task.id);
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+    } finally {
+      setIsLoading(false);
     }
-    await markTaskComplete(incompleteTask.id);
   };
 
   return (
-    <div className="space-y-4">
-      <Button onClick={handleFetchTasks}>Fetch Tasks</Button>
-      <Button onClick={handleCreateTask} variant="outline">
-        Create New Task
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={() => handleTimeAction('start')}
+        disabled={isLoading || task?.status === 'done'}
+      >
+        <PlayCircle className="h-4 w-4 text-green-500" />
+        Start Timer
       </Button>
-      <Button onClick={handleUpdateTask} variant="ghost">
-        Update First Task
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={() => handleTimeAction('pause')}
+        disabled={isLoading || task?.status === 'done'}
+      >
+        <PauseCircle className="h-4 w-4 text-yellow-500" />
+        Pause Timer
       </Button>
-      <Button onClick={handleDeleteTask} variant="destructive">
-        Delete Last Task
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={() => handleStatusChange('in-progress')}
+        disabled={isLoading || task?.status === 'done'}
+      >
+        <Clock className="h-4 w-4 text-blue-500" />
+        In Progress
       </Button>
-      <Button onClick={handleMarkTaskComplete} variant="secondary">
-        Mark First Incomplete Task Complete
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={handleComplete}
+        disabled={isLoading || task?.status === 'done'}
+      >
+        <CheckCircle className="h-4 w-4 text-green-500" />
+        Complete
       </Button>
+
+      {task?.status === 'done' && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2"
+          disabled={true}
+        >
+          <AlertCircle className="h-4 w-4 text-gray-500" />
+          Task Completed
+        </Button>
+      )}
     </div>
   );
 };
