@@ -1,7 +1,11 @@
 // src/hooks/useCardList.ts
+import { useMemo } from 'react';
 import { useStore } from '@/store';
-import { selectCardState, selectFilteredAndSortedCards } from '@/store/selectors/cards';
-import type { Project, Task, Objective, TodoList, EntityType, Filterable } from '@/types';
+import { selectCardState } from '@/store/selectors/cards';
+// Use shallow to ensure a stable reference
+import { shallow } from 'zustand/shallow';
+import type { EntityType, Filterable } from '@/types';
+import type { StoreState } from '@/store/types';
 
 interface UseCardListProps<T extends Filterable> {
   type: EntityType;
@@ -24,22 +28,86 @@ interface UseCardListReturn<T extends Filterable> {
 export function useCardList<T extends Filterable>({
   type,
   items,
-  onItemClick
+  onItemClick,
 }: UseCardListProps<T>): UseCardListReturn<T> {
-  const cardState = useStore(selectCardState);
-  const setCardView = useStore((state) => state.setCardView);
-  const setCardVariant = useStore((state) => state.setCardVariant);
-  const setFilterStatus = useStore((state) => state.setFilterStatus);
-  const setFilterPriority = useStore((state) => state.setFilterPriority);
-  const setSortBy = useStore((state) => state.setSortBy);
-  const toggleSortDirection = useStore((state) => state.toggleSortDirection);
+  // Use the memoized selector with shallow equality to get a stable reference
+  const {
+    cardView: view,
+    cardVariant: variant,
+    filterStatus,
+    filterPriority,
+    sortBy,
+    sortDirection,
+  } = useStore(selectCardState, shallow);
 
-  // Filter and sort items
-  const filteredItems = selectFilteredAndSortedCards(items, useStore.getState());
+  // Get store actions with explicit typing for the state parameter
+  const {
+    setCardView,
+    setCardVariant,
+    setFilterStatus,
+    setFilterPriority,
+    setSortBy,
+    toggleSortDirection,
+  } = useStore((state: StoreState) => ({
+    setCardView: state.setCardView,
+    setCardVariant: state.setCardVariant,
+    setFilterStatus: state.setFilterStatus,
+    setFilterPriority: state.setFilterPriority,
+    setSortBy: state.setSortBy,
+    toggleSortDirection: state.toggleSortDirection,
+  }));
+
+  // Memoize the filtered and sorted items so that recalculation only happens when dependencies change.
+  const filteredItems = useMemo(() => {
+    let result = items;
+
+    if (filterStatus) {
+      result = result.filter(item => item.status === filterStatus);
+    }
+
+    if (filterPriority) {
+      result = result.filter(item => 'priority' in item && item.priority === filterPriority);
+    }
+
+    if (sortBy) {
+      result = [...result].sort((a, b) => {
+        switch (sortBy) {
+          case 'name':
+            return (
+              (a.name || '').localeCompare(b.name || '') *
+              (sortDirection === 'asc' ? 1 : -1)
+            );
+          case 'date':
+            // Use nullish coalescing to ensure createdAt is never undefined.
+            return (
+              (new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()) *
+              (sortDirection === 'asc' ? 1 : -1)
+            );
+          case 'status':
+            return (
+              (a.status || '').localeCompare(b.status || '') *
+              (sortDirection === 'asc' ? 1 : -1)
+            );
+          case 'priority':
+            if ('priority' in a && 'priority' in b) {
+              return (
+                (a.priority || '').localeCompare(b.priority || '') *
+                (sortDirection === 'asc' ? 1 : -1)
+              );
+            }
+            return 0;
+          default:
+            return 0;
+        }
+      });
+    }
+
+    return result;
+  }, [items, filterStatus, filterPriority, sortBy, sortDirection]);
 
   return {
-    view: cardState.cardView,
-    variant: cardState.cardVariant,
+    view,
+    variant,
     filteredItems,
     handleViewChange: setCardView,
     handleVariantChange: setCardVariant,

@@ -1,18 +1,43 @@
-
 // src/store/selectors/cards.ts
+import { createSelector } from '@reduxjs/toolkit';
 import { StoreState } from '../types';
 import type { Filterable } from '@/types';
 
-export const selectCardState = (state: StoreState) => ({
-  selectedCard: state.selectedCard,
-  cardView: state.cardView,
-  cardVariant: state.cardVariant,
-  filterStatus: state.filterStatus,
-  filterPriority: state.filterPriority,
-  sortBy: state.sortBy,
-  sortDirection: state.sortDirection,
-});
+// Instead of returning an object directly (which would be a new reference every time),
+// we first extract the relevant state values into an array.
+const selectCardStateBase = (state: StoreState) => [
+  state.selectedCard,
+  state.cardView,
+  state.cardVariant,
+  state.filterStatus,
+  state.filterPriority,
+  state.sortBy,
+  state.sortDirection,
+];
 
+// Memoized selector: if none of the values in the array change, the resulting object remains the same.
+export const selectCardState = createSelector(
+  [selectCardStateBase],
+  ([
+    selectedCard,
+    cardView,
+    cardVariant,
+    filterStatus,
+    filterPriority,
+    sortBy,
+    sortDirection,
+  ]) => ({
+    selectedCard,
+    cardView,
+    cardVariant,
+    filterStatus,
+    filterPriority,
+    sortBy,
+    sortDirection,
+  })
+);
+
+// Utility: Filter cards based on status and priority.
 export const filterCards = <T extends Filterable>(
   items: T[],
   filterStatus: string | null,
@@ -25,6 +50,7 @@ export const filterCards = <T extends Filterable>(
   });
 };
 
+// Utility: Sort cards by a given property and direction.
 export const sortCards = <T extends Filterable>(
   items: T[],
   sortBy: 'name' | 'date' | 'status' | 'priority' | null,
@@ -50,6 +76,7 @@ export const sortCards = <T extends Filterable>(
   return sortDirection === 'asc' ? sorted : sorted.reverse();
 };
 
+// Utility: Combine filtering and sorting.
 export const selectFilteredAndSortedCards = <T extends Filterable>(
   items: T[],
   state: StoreState

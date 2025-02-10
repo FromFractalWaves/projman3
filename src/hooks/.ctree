@@ -1,0 +1,1030 @@
+hooks/
+├── forms/
+│   ├── base/
+│   │   ├── formHandlers.ts
+│   │   │       // src/types/forms/base/formHandlers.ts
+│   │   │       import { FormEvent } from 'react';
+│   │   │       
+│   │   │       export interface FormHandlers<T> {
+│   │   │         handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+│   │   │         handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+│   │   │         setFieldValue: (field: keyof T, value: any) => void;
+│   │   │         setFieldError: (field: keyof T, error: string) => void;
+│   │   │         setFieldTouched: (field: keyof T, isTouched?: boolean) => void;
+│   │   │         handleSubmit: (e: FormEvent) => Promise<void>;  // Changed this to be more generic
+│   │   │         resetForm: () => void;
+│   │   │       }
+│   │   └── index.ts
+│   │           import { FormHandlers } from './formHandlers';
+│   ├── index.ts
+│   │       export * from './useFields';
+│   │       export * from './useForm';
+│   │       export * from './base';
+│   ├── useFields.ts
+│   │       // src/hooks/forms/useField.ts
+│   │       import { useCallback } from 'react';
+│   │       import type { FieldConfig, FieldValue } from '@/types/forms/fields';
+│   │       
+│   │       interface UseFieldProps<T extends FieldConfig> {
+│   │         field: T;
+│   │         value: FieldValue<T>;
+│   │         onChange: (name: string, value: any) => void;
+│   │         onBlur?: (name: string) => void;
+│   │         validate?: (value: any) => string | undefined;
+│   │       }
+│   │       
+│   │       interface UseFieldReturn<T extends FieldConfig> {
+│   │         inputProps: {
+│   │           name: string;
+│   │           value: FieldValue<T>;
+│   │           onChange: (event: React.ChangeEvent<any>) => void;
+│   │           onBlur: (event: React.FocusEvent<any>) => void;
+│   │           required?: boolean;
+│   │           disabled?: boolean;
+│   │           placeholder?: string;
+│   │           className?: string;
+│   │         };
+│   │         handleChange: (value: FieldValue<T>) => void;
+│   │         handleBlur: () => void;
+│   │       }
+│   │       
+│   │       export function useField<T extends FieldConfig>({
+│   │         field,
+│   │         value,
+│   │         onChange,
+│   │         onBlur,
+│   │         validate,
+│   │       }: UseFieldProps<T>): UseFieldReturn<T> {
+│   │         const handleChange = useCallback((newValue: FieldValue<T>) => {
+│   │           onChange(field.name, newValue);
+│   │         }, [field.name, onChange]);
+│   │       
+│   │         const handleChangeEvent = useCallback((event: React.ChangeEvent<any>) => {
+│   │           const value = event.target.value;
+│   │           handleChange(value as FieldValue<T>);
+│   │         }, [handleChange]);
+│   │       
+│   │         const handleBlur = useCallback(() => {
+│   │           if (onBlur) {
+│   │             onBlur(field.name);
+│   │           }
+│   │         }, [field.name, onBlur]);
+│   │       
+│   │         return {
+│   │           inputProps: {
+│   │             name: field.name,
+│   │             value: value ?? '',
+│   │             onChange: handleChangeEvent,
+│   │             onBlur: handleBlur,
+│   │             required: field.required,
+│   │             disabled: field.disabled,
+│   │             placeholder: field.placeholder,
+│   │             className: field.className,
+│   │           },
+│   │           handleChange,
+│   │           handleBlur,
+│   │         };
+│   │       }
+│   └── useForm.ts
+│           // src/hooks/forms/useForm.ts
+│           import { useState, useCallback } from 'react';
+│           import type { FormState, FormConfig, UseFormReturn } from '@/types/forms/base';
+│           import { FormEvent } from 'react';
+│           
+│           export function useForm<T extends Record<string, any>>(config: FormConfig<T>): UseFormReturn<T> {
+│             const [formState, setFormState] = useState<FormState<T>>({
+│               values: config.initialValues,
+│               errors: {},
+│               touched: {} as Record<keyof T, boolean>,
+│               isSubmitting: false,
+│               isDirty: false,
+│               isValid: true,
+│               submitCount: 0
+│             });
+│           
+│             const handleChange = useCallback((
+│               nameOrEvent: string | React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+│               value?: any
+│             ) => {
+│               const fieldName = typeof nameOrEvent === 'string' ? nameOrEvent : nameOrEvent.target.name;
+│               const fieldValue = typeof nameOrEvent === 'string' ? value : nameOrEvent.target.value;
+│               
+│               setFormState(prev => ({
+│                 ...prev,
+│                 values: {
+│                   ...prev.values,
+│                   [fieldName]: fieldValue
+│                 },
+│                 isDirty: true
+│               }));
+│             }, []);
+│           
+│             const handleBlur = useCallback((
+│               nameOrEvent: string | React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+│             ) => {
+│               const fieldName = typeof nameOrEvent === 'string' ? nameOrEvent : nameOrEvent.target?.name;
+│               
+│               if (fieldName) {
+│                 setFormState(prev => ({
+│                   ...prev,
+│                   touched: {
+│                     ...prev.touched,
+│                     [fieldName]: true
+│                   }
+│                 }));
+│               }
+│             }, []);
+│           
+│             const setFieldValue = useCallback((field: keyof T, value: any) => {
+│               setFormState(prev => ({
+│                 ...prev,
+│                 values: {
+│                   ...prev.values,
+│                   [field]: value
+│                 },
+│                 isDirty: true
+│               }));
+│             }, []);
+│           
+│             const setFieldError = useCallback((field: keyof T, error: string) => {
+│               setFormState(prev => ({
+│                 ...prev,
+│                 errors: {
+│                   ...prev.errors,
+│                   [field]: error
+│                 }
+│               }));
+│             }, []);
+│           
+│             const setFieldTouched = useCallback((field: keyof T, isTouched: boolean = true) => {
+│               setFormState(prev => ({
+│                 ...prev,
+│                 touched: {
+│                   ...prev.touched,
+│                   [field]: isTouched
+│                 }
+│               }));
+│             }, []);
+│           
+│             const validateField = useCallback(async (field: keyof T) => {
+│               if (config.validate) {
+│                 const errors = await config.validate(formState.values);
+│                 return errors[field as string];
+│               }
+│               return undefined;
+│             }, [config, formState.values]);
+│           
+│             const validateForm = useCallback(async () => {
+│               if (config.validate) {
+│                 const errors = await config.validate(formState.values);
+│                 setFormState(prev => ({
+│                   ...prev,
+│                   errors,
+│                   isValid: Object.keys(errors).length === 0
+│                 }));
+│                 return errors;
+│               }
+│               return {};
+│             }, [config, formState.values]);
+│           
+│             const handleSubmit = useCallback(async (e: FormEvent) => { // Changed type here
+│               e.preventDefault();
+│               setFormState(prev => ({ 
+│                 ...prev, 
+│                 isSubmitting: true,
+│                 submitCount: prev.submitCount + 1 
+│               }));
+│           
+│               try {
+│                 const errors = await validateForm();
+│                 if (Object.keys(errors).length === 0) {
+│                   await config.onSubmit(formState.values);
+│                 }
+│               } catch (error) {
+│                 setFormState(prev => ({
+│                   ...prev,
+│                   errors: {
+│                     ...prev.errors,
+│                     submit: error instanceof Error ? error.message : 'Submission failed'
+│                   }
+│                 }));
+│               } finally {
+│                 setFormState(prev => ({ ...prev, isSubmitting: false }));
+│               }
+│             }, [config, formState.values, validateForm]);
+│           
+│             const resetForm = useCallback(() => {
+│               setFormState({
+│                 values: config.initialValues,
+│                 errors: {},
+│                 touched: {} as Record<keyof T, boolean>,
+│                 isSubmitting: false,
+│                 isDirty: false,
+│                 isValid: true,
+│                 submitCount: 0
+│               });
+│             }, [config.initialValues]);
+│           
+│             return {
+│               ...formState,
+│               handleChange,
+│               handleBlur,
+│               setFieldValue,
+│               setFieldError,
+│               setFieldTouched,
+│               handleSubmit,
+│               resetForm,
+│               validateField,
+│               validateForm,
+│               setValues: (values: T) => setFormState(prev => ({ ...prev, values })),
+│               setErrors: (errors: Record<string, string>) => 
+│                 setFormState(prev => ({ ...prev, errors })),
+│               setTouched: (touched: Record<keyof T, boolean>) => 
+│                 setFormState(prev => ({ ...prev, touched }))
+│             };
+│           }
+├── index.ts
+│       // src/hooks/index.ts
+│       export * from './useProjects';
+│       export * from './useObjectives';
+│       export * from './useTasks';
+│       export * from './useTodoLists';
+│       export * from './useTimeEntries';
+│       export * from './forms';
+│       export * from './useTimeline';
+│       export * from './useCardList';
+│       
+├── use-mobile.tsx
+│       import * as React from "react"
+│       
+│       const MOBILE_BREAKPOINT = 768
+│       
+│       export function useIsMobile() {
+│         const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+│       
+│         React.useEffect(() => {
+│           const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+│           const onChange = () => {
+│             setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+│           }
+│           mql.addEventListener("change", onChange)
+│           setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+│           return () => mql.removeEventListener("change", onChange)
+│         }, [])
+│       
+│         return !!isMobile
+│       }
+├── useCard.ts
+│       // src/hooks/useCard.ts
+│       import { useCallback, useState } from 'react';
+│       import { projectsApi } from '@/lib/api/projects';
+│       import { objectivesApi } from '@/lib/api/objectives';
+│       import { tasksApi } from '@/lib/api/tasks';
+│       import { todoListsApi } from '@/lib/api/todoLists';
+│       import type { EntityType } from '@/components/cards/BaseCard';
+│       import type { 
+│         Project, 
+│         Task, 
+│         Objective, 
+│         TodoList,
+│         ProjectFormData,
+│         TaskFormData,
+│         ObjectiveFormData,
+│         TodoListFormData
+│       } from '@/types';
+│       
+│       interface UseCardOptions {
+│         type: EntityType;
+│         id: string;
+│       }
+│       
+│       interface UseCardReturn {
+│         loading: boolean;
+│         error: Error | null;
+│         handleEdit: () => void;
+│         handleDelete: () => Promise<void>;
+│       }
+│       
+│       // Helper to convert date objects to ISO strings.
+│       const convertDatesToStrings = <T extends { startDate?: Date; dueDate?: Date }>(
+│         data: T
+│       ): Omit<T, 'startDate' | 'dueDate'> & { startDate?: string; dueDate?: string } => {
+│         const { startDate, dueDate, ...rest } = data;
+│         return {
+│           ...rest,
+│           ...(startDate && { startDate: startDate.toISOString() }),
+│           ...(dueDate && { dueDate: dueDate.toISOString() }),
+│         };
+│       };
+│       
+│       export function useCard({ type, id }: UseCardOptions): UseCardReturn {
+│         const [loading, setLoading] = useState(false);
+│         const [error, setError] = useState<Error | null>(null);
+│       
+│         const handleEdit = useCallback(() => {
+│           // For demonstration, simply log the edit action.
+│           console.log(`Edit ${type} with id ${id}`);
+│         }, [type, id]);
+│       
+│         const handleDelete = useCallback(async () => {
+│           setLoading(true);
+│           setError(null);
+│           try {
+│             switch (type) {
+│               case 'project':
+│                 await projectsApi.deleteProject(id);
+│                 break;
+│               case 'objective':
+│                 await objectivesApi.deleteObjective(id);
+│                 break;
+│               case 'task':
+│                 await tasksApi.deleteTask(id);
+│                 break;
+│               case 'todoList':
+│                 await todoListsApi.deleteTodoList(id);
+│                 break;
+│             }
+│           } catch (err) {
+│             setError(err instanceof Error ? err : new Error('An error occurred'));
+│             throw err;
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, [type, id]);
+│       
+│         return {
+│           loading,
+│           error,
+│           handleEdit,
+│           handleDelete,
+│         };
+│       }
+├── useCardList.ts
+│       // src/hooks/useCardList.ts
+│       import { useMemo } from 'react';
+│       import { useStore } from '@/store';
+│       import { selectCardState } from '@/store/selectors/cards';
+│       import type { EntityType, Filterable } from '@/types';
+│       
+│       interface UseCardListProps<T extends Filterable> {
+│         type: EntityType;
+│         items: T[];
+│         onItemClick?: (item: T) => void;
+│       }
+│       
+│       interface UseCardListReturn<T extends Filterable> {
+│         view: 'grid' | 'list';
+│         variant: 'default' | 'compact' | 'detailed';
+│         filteredItems: T[];
+│         handleViewChange: (view: 'grid' | 'list') => void;
+│         handleVariantChange: (variant: 'default' | 'compact' | 'detailed') => void;
+│         handleFilterStatus: (status: string | undefined) => void;
+│         handleFilterPriority: (priority: string | undefined) => void;
+│         handleSortChange: (sortBy: 'name' | 'date' | 'status' | 'priority' | undefined) => void;
+│         handleSortDirectionToggle: () => void;
+│       }
+│       
+│       export function useCardList<T extends Filterable>({
+│         type,
+│         items,
+│         onItemClick,
+│       }: UseCardListProps<T>): UseCardListReturn<T> {
+│         const {
+│           cardView: view,
+│           cardVariant: variant,
+│           filterStatus,
+│           filterPriority,
+│           sortBy,
+│           sortDirection,
+│         } = useStore(selectCardState);
+│       
+│         // Get store actions
+│         const {
+│           setCardView,
+│           setCardVariant,
+│           setFilterStatus,
+│           setFilterPriority,
+│           setSortBy,
+│           toggleSortDirection,
+│         } = useStore((state) => ({
+│           setCardView: state.setCardView,
+│           setCardVariant: state.setCardVariant,
+│           setFilterStatus: state.setFilterStatus,
+│           setFilterPriority: state.setFilterPriority,
+│           setSortBy: state.setSortBy,
+│           toggleSortDirection: state.toggleSortDirection,
+│         }));
+│       
+│         // Memoize the filtered and sorted items so that it only recalculates when the dependencies change.
+│         const filteredItems = useMemo(() => {
+│           let result = items;
+│       
+│           if (filterStatus) {
+│             result = result.filter(item => item.status === filterStatus);
+│           }
+│       
+│           if (filterPriority) {
+│             result = result.filter(item => 'priority' in item && item.priority === filterPriority);
+│           }
+│       
+│           if (sortBy) {
+│             result = [...result].sort((a, b) => {
+│               switch (sortBy) {
+│                 case 'name':
+│                   return (
+│                     (a.name || '').localeCompare(b.name || '') * (sortDirection === 'asc' ? 1 : -1)
+│                   );
+│                 case 'date':
+│                   return (
+│                     (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) *
+│                     (sortDirection === 'asc' ? 1 : -1)
+│                   );
+│                 case 'status':
+│                   return (
+│                     (a.status || '').localeCompare(b.status || '') * (sortDirection === 'asc' ? 1 : -1)
+│                   );
+│                 case 'priority':
+│                   if ('priority' in a && 'priority' in b) {
+│                     return (
+│                       (a.priority || '').localeCompare(b.priority || '') * (sortDirection === 'asc' ? 1 : -1)
+│                     );
+│                   }
+│                   return 0;
+│                 default:
+│                   return 0;
+│               }
+│             });
+│           }
+│       
+│           return result;
+│         }, [items, filterStatus, filterPriority, sortBy, sortDirection]);
+│       
+│         return {
+│           view,
+│           variant,
+│           filteredItems,
+│           handleViewChange: setCardView,
+│           handleVariantChange: setCardVariant,
+│           handleFilterStatus: (status) => setFilterStatus(status || null),
+│           handleFilterPriority: (priority) => setFilterPriority(priority || null),
+│           handleSortChange: (sortBy) => setSortBy(sortBy || null),
+│           handleSortDirectionToggle: toggleSortDirection,
+│         };
+│       }
+├── useCardView.ts
+│       // src/hooks/useCardView.ts
+│       import { useStore } from '@/store';
+│       import { selectCardState } from '@/store/selectors/cards';
+│       
+│       export function useCardView() {
+│         // Using the memoized selector avoids returning a new object on every render.
+│         const { cardView: view, cardVariant: variant } = useStore(selectCardState);
+│       
+│         const getLayoutClasses = () => {
+│           switch (view) {
+│             case 'grid':
+│               return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+│             case 'list':
+│               return 'space-y-3';
+│             default:
+│               return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+│           }
+│         };
+│       
+│         return { view, variant, getLayoutClasses };
+│       }
+├── useForm.ts
+│       'use client';
+│       
+│       import { useState, useCallback, FormEvent } from 'react';
+│       import type { FormState, FormHandlers, UseFormReturn, FormConfig } from '@/types/forms';
+│       
+│       export function useForm<T extends Record<string, any>>(config: FormConfig<T>): UseFormReturn<T> {
+│         const [formState, setFormState] = useState<FormState<T>>({
+│           values: config.initialValues,
+│           errors: {},
+│           touched: {} as Record<keyof T, boolean>,
+│           isSubmitting: false,
+│           isDirty: false,
+│           isValid: true,
+│           submitCount: 0
+│         });
+│       
+│         const handleChange = useCallback((name: string, value: any) => {
+│           setFormState(prev => ({
+│             ...prev,
+│             values: {
+│               ...prev.values,
+│               [name]: value
+│             },
+│             isDirty: true
+│           }));
+│         }, []);
+│       
+│         const handleBlur = useCallback((name: string) => {
+│           setFormState(prev => ({
+│             ...prev,
+│             touched: {
+│               ...prev.touched,
+│               [name]: true
+│             }
+│           }));
+│         }, []);
+│       
+│         const setFieldValue = useCallback((field: keyof T, value: any) => {
+│           setFormState(prev => ({
+│             ...prev,
+│             values: {
+│               ...prev.values,
+│               [field]: value
+│             },
+│             isDirty: true
+│           }));
+│         }, []);
+│       
+│         const setFieldError = useCallback((field: keyof T, error: string) => {
+│           setFormState(prev => ({
+│             ...prev,
+│             errors: {
+│               ...prev.errors,
+│               [field]: error
+│             }
+│           }));
+│         }, []);
+│       
+│         const setFieldTouched = useCallback((field: keyof T, isTouched: boolean = true) => {
+│           setFormState(prev => ({
+│             ...prev,
+│             touched: {
+│               ...prev.touched,
+│               [field]: isTouched
+│             }
+│           }));
+│         }, []);
+│       
+│         const validateField = useCallback(async (field: keyof T) => {
+│           if (config.validate) {
+│             const errors = await config.validate(formState.values);
+│             return errors[field as string];
+│           }
+│           return undefined;
+│         }, [config, formState.values]);
+│       
+│         const validateForm = useCallback(async () => {
+│           if (config.validate) {
+│             const errors = await config.validate(formState.values);
+│             setFormState(prev => ({
+│               ...prev,
+│               errors,
+│               isValid: Object.keys(errors).length === 0
+│             }));
+│             return errors;
+│           }
+│           return {};
+│         }, [config, formState.values]);
+│       
+│         const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
+│           e.preventDefault();
+│           setFormState(prev => ({ 
+│             ...prev, 
+│             isSubmitting: true,
+│             submitCount: prev.submitCount + 1 
+│           }));
+│       
+│           try {
+│             const errors = await validateForm();
+│             if (Object.keys(errors).length === 0) {
+│               await config.onSubmit(formState.values);
+│             }
+│           } catch (error) {
+│             setFormState(prev => ({
+│               ...prev,
+│               errors: {
+│                 ...prev.errors,
+│                 submit: error instanceof Error ? error.message : 'Submission failed'
+│               }
+│             }));
+│           } finally {
+│             setFormState(prev => ({ ...prev, isSubmitting: false }));
+│           }
+│         }, [config, formState.values, validateForm]);
+│       
+│         const resetForm = useCallback(() => {
+│           setFormState({
+│             values: config.initialValues,
+│             errors: {},
+│             touched: {} as Record<keyof T, boolean>,
+│             isSubmitting: false,
+│             isDirty: false,
+│             isValid: true,
+│             submitCount: 0
+│           });
+│         }, [config.initialValues]);
+│       
+│         return {
+│           ...formState,
+│           handleChange,
+│           handleBlur,
+│           setFieldValue,
+│           setFieldError,
+│           setFieldTouched,
+│           handleSubmit,
+│           resetForm,
+│           validateField,
+│           validateForm,
+│           setValues: (values: T) => setFormState(prev => ({ ...prev, values })),
+│           setErrors: (errors: Record<string, string>) => 
+│             setFormState(prev => ({ ...prev, errors })),
+│           setTouched: (touched: Record<keyof T, boolean>) => 
+│             setFormState(prev => ({ ...prev, touched }))
+│         };
+│       }
+├── useObjectives.ts
+│       // src/hooks/useObjectives.ts
+│       import { useState, useEffect, useCallback } from 'react';
+│       import type { Objective, ObjectiveFormData } from '@/types';
+│       import { objectivesApi } from '@/lib/api/objectives';
+│       
+│       interface UseObjectivesReturn {
+│         objectives: Objective[];
+│         loading: boolean;
+│         error: Error | null;
+│         fetchObjectives: () => Promise<void>;
+│         createObjective: (data: ObjectiveFormData) => Promise<void>;
+│         refresh: () => Promise<void>;
+│       }
+│       
+│       export const useObjectives = (): UseObjectivesReturn => {
+│         const [objectives, setObjectives] = useState<Objective[]>([]);
+│         const [loading, setLoading] = useState<boolean>(true);
+│         const [error, setError] = useState<Error | null>(null);
+│       
+│         const fetchObjectives = useCallback(async () => {
+│           setLoading(true);
+│           setError(null);
+│           try {
+│             const fetchedObjectives = await objectivesApi.getObjectives();
+│             setObjectives(fetchedObjectives);
+│           } catch (err: any) {
+│             setError(err);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         const createObjective = useCallback(async (data: ObjectiveFormData) => {
+│           setLoading(true);
+│           try {
+│             const newObjective = await objectivesApi.createObjective(data);
+│             setObjectives(prev => [...prev, newObjective]);
+│             setError(null);
+│           } catch (err) {
+│             setError(err as Error);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         const refresh = useCallback(async () => {
+│           await fetchObjectives();
+│         }, [fetchObjectives]);
+│       
+│         useEffect(() => {
+│           fetchObjectives();
+│         }, [fetchObjectives]);
+│       
+│         return { objectives, loading, error, fetchObjectives, createObjective, refresh };
+│       };
+├── useProjects.ts
+│       'use client';
+│       
+│       // src/hooks/useProjects.ts
+│       import { useState, useEffect, useCallback } from 'react';
+│       import type { Project, ProjectFormData } from '@/types';
+│       import { projectsApi } from '@/lib/api/projects';
+│       
+│       interface UseProjectsReturn {
+│         projects: Project[];
+│         loading: boolean;
+│         error: Error | null;
+│         fetchProjects: () => Promise<void>;
+│         createProject: (data: ProjectFormData) => Promise<void>;
+│         refresh: () => Promise<void>;
+│       }
+│       
+│       export function useProjects(): UseProjectsReturn {
+│         const [projects, setProjects] = useState<Project[]>([]);
+│         const [loading, setLoading] = useState<boolean>(false);
+│         const [error, setError] = useState<Error | null>(null);
+│       
+│         const fetchProjects = useCallback(async () => {
+│           setLoading(true);
+│           try {
+│             const data = await projectsApi.getProjects();
+│             setProjects(data);
+│             setError(null);
+│           } catch (err) {
+│             setError(err as Error);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         const createProject = useCallback(async (data: ProjectFormData) => {
+│           setLoading(true);
+│           try {
+│             const newProject = await projectsApi.createProject(data);
+│             setProjects(prev => [...prev, newProject]);
+│             setError(null);
+│           } catch (err) {
+│             setError(err as Error);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         const refresh = useCallback(async () => {
+│           await fetchProjects();
+│         }, [fetchProjects]);
+│       
+│         useEffect(() => {
+│           fetchProjects();
+│         }, [fetchProjects]);
+│       
+│         return { projects, loading, error, fetchProjects, createProject, refresh };
+│       }
+├── useTaskCompletion.ts
+│       // src/hooks/useTaskCompletion.ts
+│       import { useCallback } from 'react';
+│       import { useStore } from '@/store';
+│       
+│       export function useTaskCompletion() {
+│         const markTaskComplete = useStore((state) => state.markTaskComplete);
+│         
+│         const completeTask = useCallback(async (taskId: string) => {
+│           try {
+│             await markTaskComplete(taskId);
+│             return true;
+│           } catch (error) {
+│             console.error('Error completing task:', error);
+│             return false;
+│           }
+│         }, [markTaskComplete]);
+│       
+│         return { completeTask };
+│       }
+├── useTasks.ts
+│       // src/hooks/useTasks.ts
+│       import { useState, useEffect, useCallback } from 'react';
+│       import type { Task, TaskFormData } from '@/types';
+│       import { tasksApi } from '@/lib/api/tasks';
+│       
+│       interface UseTasksReturn {
+│         tasks: Task[];
+│         loading: boolean;
+│         error: Error | null;
+│         fetchTasks: () => Promise<void>;
+│         createTask: (data: TaskFormData) => Promise<void>;
+│         refresh: () => Promise<void>;
+│       }
+│       
+│       export const useTasks = (): UseTasksReturn => {
+│         const [tasks, setTasks] = useState<Task[]>([]);
+│         const [loading, setLoading] = useState<boolean>(true);
+│         const [error, setError] = useState<Error | null>(null);
+│       
+│         const fetchTasks = useCallback(async () => {
+│           setLoading(true);
+│           setError(null);
+│           try {
+│             const fetchedTasks = await tasksApi.getTasks();
+│             setTasks(fetchedTasks);
+│           } catch (err: any) {
+│             setError(err);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         const createTask = useCallback(async (data: TaskFormData) => {
+│           setLoading(true);
+│           try {
+│             const newTask = await tasksApi.createTask(data);
+│             setTasks(prev => [...prev, newTask]);
+│             setError(null);
+│           } catch (err) {
+│             setError(err as Error);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         const refresh = useCallback(async () => {
+│           await fetchTasks();
+│         }, [fetchTasks]);
+│       
+│         useEffect(() => {
+│           fetchTasks();
+│         }, [fetchTasks]);
+│       
+│         return { tasks, loading, error, fetchTasks, createTask, refresh };
+│       };
+├── useTimeEntries.ts
+│       // src/hooks/useTimeEntries.ts
+│       import { useState, useEffect, useCallback } from 'react';
+│       import type { TimeEntry } from '@/types';
+│       import { timeEntriesApi } from '@/lib/api/timeEntries';
+│       
+│       interface TimeEntryStats {
+│         totalHours: number;
+│         entriesCount: number;
+│         averageEntryDuration: number;
+│       }
+│       
+│       interface UseTimeEntriesReturn {
+│         timeEntries: TimeEntry[];
+│         stats: TimeEntryStats;
+│         loading: boolean;
+│         error: Error | null;
+│         fetchTimeEntries: () => Promise<void>; // Added fetchTimeEntries
+│       }
+│       
+│       export const useTimeEntries = (): UseTimeEntriesReturn => {
+│         const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+│         const [stats, setStats] = useState<TimeEntryStats>({
+│           totalHours: 0,
+│           entriesCount: 0,
+│           averageEntryDuration: 0,
+│         });
+│         const [loading, setLoading] = useState<boolean>(true);
+│         const [error, setError] = useState<Error | null>(null);
+│       
+│         const fetchTimeEntries = useCallback(async () => {
+│           setLoading(true);
+│           setError(null);
+│           try {
+│             const fetchedTimeEntries = await timeEntriesApi.getTimeEntries();
+│             setTimeEntries(fetchedTimeEntries);
+│       
+│             // Calculate stats
+│             const totalDuration = fetchedTimeEntries.reduce((acc, entry) => acc + (entry.duration || 0), 0);
+│             const entriesCount = fetchedTimeEntries.length;
+│             const averageEntryDuration = entriesCount > 0 ? totalDuration / entriesCount : 0;
+│       
+│             setStats({
+│               totalHours: totalDuration / 60, // Convert minutes to hours
+│               entriesCount,
+│               averageEntryDuration: averageEntryDuration / 60, // Convert minutes to hours
+│             });
+│           } catch (err: any) {
+│             setError(err);
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, []);
+│       
+│         useEffect(() => {
+│           fetchTimeEntries();
+│         }, [fetchTimeEntries]);
+│       
+│         return { timeEntries, stats, loading, error, fetchTimeEntries };
+│       };
+├── useTimeline.ts
+│       // src/hooks/useTimeline.ts
+│       import { useMemo } from 'react';
+│       import type { Project, Objective, Task } from '@/types';
+│       import type { TimelineEvent } from '@/types/timeline';
+│       
+│       interface UseTimelineOptions {
+│         projects: Project[];
+│         objectives: Objective[];
+│         tasks: Task[];
+│       }
+│       
+│       export function useTimeline({ projects, objectives, tasks }: UseTimelineOptions) {
+│         const events = useMemo(() => {
+│           const timelineEvents: TimelineEvent[] = [];
+│       
+│           // Add project events
+│           projects.forEach(project => {
+│             timelineEvents.push({
+│               id: `project-${project.id}`,
+│               title: project.name,
+│               date: project.startDate?.toISOString() || project.createdAt.toISOString(),
+│               description: project.description || 'No description provided',
+│               status: getStatusFromProject(project),
+│               type: 'project',
+│               entityId: project.id
+│             });
+│           });
+│       
+│           // Add objective events
+│           objectives.forEach(objective => {
+│             timelineEvents.push({
+│               id: `objective-${objective.id}`,
+│               title: objective.name,
+│               date: objective.startDate?.toISOString() || objective.createdAt.toISOString(),
+│               description: objective.description || 'No description provided',
+│               status: getStatusFromObjective(objective),
+│               type: 'objective',
+│               entityId: objective.id
+│             });
+│           });
+│       
+│           // Add task events
+│           tasks.forEach(task => {
+│             timelineEvents.push({
+│               id: `task-${task.id}`,
+│               title: task.content,
+│               date: task.startDate?.toISOString() || task.createdAt.toISOString(),
+│               description: task.description || 'No description provided',
+│               status: getStatusFromTask(task),
+│               type: 'task',
+│               entityId: task.id
+│             });
+│           });
+│       
+│           return timelineEvents;
+│         }, [projects, objectives, tasks]);
+│       
+│         return { events };
+│       }
+│       
+│       // Helper functions
+│       function getStatusFromProject(project: Project): TimelineEvent['status'] {
+│         switch (project.status) {
+│           case 'completed':
+│             return 'completed';
+│           case 'active':
+│           case 'in-progress':
+│             return 'in-progress';
+│           default:
+│             return 'upcoming';
+│         }
+│       }
+│       
+│       function getStatusFromObjective(objective: Objective): TimelineEvent['status'] {
+│         switch (objective.status) {
+│           case 'completed':
+│             return 'completed';
+│           case 'active':
+│           case 'in-progress':
+│             return 'in-progress';
+│           default:
+│             return 'upcoming';
+│         }
+│       }
+│       
+│       function getStatusFromTask(task: Task): TimelineEvent['status'] {
+│         switch (task.status) {
+│           case 'done':
+│             return 'completed';
+│           case 'in-progress':
+│             return 'in-progress';
+│           default:
+│             return 'upcoming';
+│         }
+│       }
+└── useTodoLists.ts
+        // src/hooks/useTodoLists.ts
+        import { useState, useEffect, useCallback } from 'react';
+        import type { TodoList } from '@/types';
+        import { todoListsApi } from '@/lib/api/todoLists';
+        
+        interface UseTodoListsReturn {
+          todoLists: TodoList[];
+          loading: boolean;
+          error: Error | null;
+          fetchTodoLists: () => Promise<void>;
+          refresh: () => Promise<void>; // Added refresh method
+        }
+        
+        export const useTodoLists = (): UseTodoListsReturn => {
+          const [todoLists, setTodoLists] = useState<TodoList[]>([]);
+          const [loading, setLoading] = useState<boolean>(true);
+          const [error, setError] = useState<Error | null>(null);
+        
+          const fetchTodoLists = useCallback(async () => {
+            setLoading(true);
+            setError(null);
+            try {
+              const fetchedTodoLists = await todoListsApi.getTodoLists();
+              setTodoLists(fetchedTodoLists);
+            } catch (err: any) {
+              setError(err);
+            } finally {
+              setLoading(false);
+            }
+          }, []);
+        
+          // Add refresh method that calls fetchTodoLists
+          const refresh = useCallback(async () => {
+            await fetchTodoLists();
+          }, [fetchTodoLists]);
+        
+          useEffect(() => {
+            fetchTodoLists();
+          }, [fetchTodoLists]);
+        
+          return { todoLists, loading, error, fetchTodoLists, refresh };
+        };

@@ -1,13 +1,7 @@
 // src/components/ui/CardViewControls.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Grid, 
-  List, 
-  LayoutGrid, 
-  ArrowUpDown, 
-  Filter
-} from 'lucide-react';
+import { Grid, List, LayoutGrid, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CardViewControlsProps {

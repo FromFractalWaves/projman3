@@ -1,9 +1,13 @@
 // src/hooks/useCardView.ts
 import { useStore } from '@/store';
 import { selectCardState } from '@/store/selectors/cards';
+// Import shallow from Zustand to prevent unnecessary re-renders.
+import { shallow } from 'zustand/shallow';
 
 export function useCardView() {
-  const { cardView: view, cardVariant: variant } = useStore(selectCardState);
+  // Using shallow equality here ensures that if the individual properties haven't changed,
+  // useStore will return the same object reference.
+  const { cardView: view, cardVariant: variant } = useStore(selectCardState, shallow);
 
   const getLayoutClasses = () => {
     switch (view) {

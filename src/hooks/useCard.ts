@@ -24,16 +24,19 @@ interface UseCardOptions {
 interface UseCardReturn {
   loading: boolean;
   error: Error | null;
-  handleEdit: () => void;  // Changed to match BaseCardProps
+  handleEdit: () => void;
   handleDelete: () => Promise<void>;
 }
 
-const convertDatesToStrings = <T extends { startDate?: Date; dueDate?: Date }>(data: T): Omit<T, 'startDate' | 'dueDate'> & { startDate?: string; dueDate?: string } => {
+// Helper to convert date objects to ISO strings.
+const convertDatesToStrings = <T extends { startDate?: Date; dueDate?: Date }>(
+  data: T
+): Omit<T, 'startDate' | 'dueDate'> & { startDate?: string; dueDate?: string } => {
   const { startDate, dueDate, ...rest } = data;
   return {
     ...rest,
     ...(startDate && { startDate: startDate.toISOString() }),
-    ...(dueDate && { dueDate: dueDate.toISOString() })
+    ...(dueDate && { dueDate: dueDate.toISOString() }),
   };
 };
 
@@ -42,7 +45,7 @@ export function useCard({ type, id }: UseCardOptions): UseCardReturn {
   const [error, setError] = useState<Error | null>(null);
 
   const handleEdit = useCallback(() => {
-    // For now, just console.log the action
+    // For demonstration, simply log the edit action.
     console.log(`Edit ${type} with id ${id}`);
   }, [type, id]);
 
@@ -76,6 +79,6 @@ export function useCard({ type, id }: UseCardOptions): UseCardReturn {
     loading,
     error,
     handleEdit,
-    handleDelete
+    handleDelete,
   };
 }
