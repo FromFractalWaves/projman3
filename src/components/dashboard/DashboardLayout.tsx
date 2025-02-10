@@ -1,8 +1,10 @@
+// src/components/dashboard/DashboardLayout.tsx
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { BarChart2, CheckSquare, Folder, ListChecks, Calendar, Clock } from 'lucide-react';
 import type { Project, Objective, Task, TodoList } from '@/types';
+import TaskManagementButtons from '@/components/tasks/TaskManagementButtons';
 
 export interface DashboardLayoutProps {
   projects: Project[];
@@ -25,6 +27,7 @@ export function DashboardLayout({
   taskStats,
   onRefresh
 }: DashboardLayoutProps) {
+  // Calculate statistics for the stats card.
   const stats = useMemo(() => [
     { value: projects.length, label: 'Total Projects' },
     { value: objectives.length, label: 'Total Objectives' },
@@ -36,6 +39,7 @@ export function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 space-y-6">
+      {/* Header */}
       <header className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Project Dashboard</h1>
         <p className="text-gray-400">
@@ -92,11 +96,11 @@ export function DashboardLayout({
                       <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                         <div className="flex items-center gap-1">
                           <Calendar size={14} />
-                          Start: {new Date(project.startDate).toLocaleDateString()}
+                          <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar size={14} />
-                          Due: {new Date(project.dueDate).toLocaleDateString()}
+                          <span>Due: {new Date(project.dueDate).toLocaleDateString()}</span>
                         </div>
                       </div>
                     )}
@@ -107,9 +111,9 @@ export function DashboardLayout({
           </div>
         </div>
 
-        {/* Right Column - Tasks and Todo Lists */}
+        {/* Right Column - Tasks, Task Management, and Todo Lists */}
         <div className="space-y-6">
-          {/* Tasks Section */}
+          {/* Recent Tasks Section */}
           <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-4">
               <CheckSquare size={20} />
@@ -128,6 +132,12 @@ export function DashboardLayout({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Task Management Section */}
+          <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
+            <h2 className="text-lg font-semibold mb-4">Task Management</h2>
+            <TaskManagementButtons />
           </div>
 
           {/* Todo Lists Section */}
