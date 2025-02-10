@@ -1,60 +1,80 @@
-
 // src/hooks/useCard.ts
-import { useCallback } from 'react';
-import { useProjects } from '@/hooks/useProjects';
-import { useObjectives } from '@/hooks/useObjectives';
-import { useTasks } from '@/hooks/useTasks';
-import { useTodoLists } from '@/hooks/useTodoLists';
-import type { Project, Task, Objective, TodoList } from '@/types';
-
-export type EntityType = 'project' | 'task' | 'objective' | 'todoList';
+import { useCallback, useState } from 'react';
+import { projectsApi } from '@/lib/api/projects';
+import { objectivesApi } from '@/lib/api/objectives';
+import { tasksApi } from '@/lib/api/tasks';
+import { todoListsApi } from '@/lib/api/todoLists';
+import type { EntityType } from '@/components/cards/BaseCard';
+import type { 
+  Project, 
+  Task, 
+  Objective, 
+  TodoList,
+  ProjectFormData,
+  TaskFormData,
+  ObjectiveFormData,
+  TodoListFormData
+} from '@/types';
 
 interface UseCardOptions {
   type: EntityType;
   id: string;
 }
 
-export function useCard({ type, id }: UseCardOptions) {
-  const { updateProject, deleteProject } = useProjects();
-  const { updateObjective, deleteObjective } = useObjectives();
-  const { updateTask, deleteTask } = useTasks();
-  const { updateTodoList, deleteTodoList } = useTodoLists();
+interface UseCardReturn {
+  loading: boolean;
+  error: Error | null;
+  handleEdit: () => void;  // Changed to match BaseCardProps
+  handleDelete: () => Promise<void>;
+}
 
-  const handleEdit = useCallback(async (data: any) => {
-    switch (type) {
-      case 'project':
-        await updateProject(id, data);
-        break;
-      case 'objective':
-        await updateObjective(id, data);
-        break;
-      case 'task':
-        await updateTask(id, data);
-        break;
-      case 'todoList':
-        await updateTodoList(id, data);
-        break;
-    }
-  }, [type, id, updateProject, updateObjective, updateTask, updateTodoList]);
+const convertDatesToStrings = <T extends { startDate?: Date; dueDate?: Date }>(data: T): Omit<T, 'startDate' | 'dueDate'> & { startDate?: string; dueDate?: string } => {
+  const { startDate, dueDate, ...rest } = data;
+  return {
+    ...rest,
+    ...(startDate && { startDate: startDate.toISOString() }),
+    ...(dueDate && { dueDate: dueDate.toISOString() })
+  };
+};
+
+export function useCard({ type, id }: UseCardOptions): UseCardReturn {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const handleEdit = useCallback(() => {
+    // For now, just console.log the action
+    console.log(`Edit ${type} with id ${id}`);
+  }, [type, id]);
 
   const handleDelete = useCallback(async () => {
-    switch (type) {
-      case 'project':
-        await deleteProject(id);
-        break;
-      case 'objective':
-        await deleteObjective(id);
-        break;
-      case 'task':
-        await deleteTask(id);
-        break;
-      case 'todoList':
-        await deleteTodoList(id);
-        break;
+    setLoading(true);
+    setError(null);
+    try {
+      switch (type) {
+        case 'project':
+          await projectsApi.deleteProject(id);
+          break;
+        case 'objective':
+          await objectivesApi.deleteObjective(id);
+          break;
+        case 'task':
+          await tasksApi.deleteTask(id);
+          break;
+        case 'todoList':
+          await todoListsApi.deleteTodoList(id);
+          break;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('An error occurred'));
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  }, [type, id, deleteProject, deleteObjective, deleteTask, deleteTodoList]);
+  }, [type, id]);
 
   return {
+    loading,
+    error,
     handleEdit,
     handleDelete
   };

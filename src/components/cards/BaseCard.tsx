@@ -10,11 +10,12 @@ import {
   CircleDashed
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Project, Task, Objective, TodoList } from '@/types';
+import { useCard } from '@/hooks/useCard';
 
-// Type definitions for the card system
-type EntityType = 'project' | 'task' | 'objective' | 'todoList';
+export type EntityType = 'project' | 'task' | 'objective' | 'todoList';
 
-interface BaseCardProps {
+export interface BaseCardProps {
   type: EntityType;
   title: string;
   description?: string;
@@ -26,6 +27,34 @@ interface BaseCardProps {
   variant?: 'default' | 'compact' | 'detailed';
   onEdit?: () => void;
   onDelete?: () => void;
+  onClick?: () => void;
+  className?: string;
+}
+
+interface ProjectCardProps {
+  project: Project;
+  variant?: BaseCardProps['variant'];
+  onClick?: () => void;
+  className?: string;
+}
+
+interface TaskCardProps {
+  task: Task;
+  variant?: BaseCardProps['variant'];
+  onClick?: () => void;
+  className?: string;
+}
+
+interface ObjectiveCardProps {
+  objective: Objective;
+  variant?: BaseCardProps['variant'];
+  onClick?: () => void;
+  className?: string;
+}
+
+interface TodoListCardProps {
+  todoList: TodoList;
+  variant?: BaseCardProps['variant'];
   onClick?: () => void;
   className?: string;
 }
@@ -208,60 +237,75 @@ export function BaseCard({
   );
 }
 
-// Higher-order components for specific entity types
-export function ProjectCard({ project, ...props }) {
+export function ProjectCard({ project, ...props }: ProjectCardProps) {
+  const { handleEdit, handleDelete } = useCard({ type: 'project', id: project.id });
+  
   return (
     <BaseCard
       type="project"
       title={project.name}
-      description={project.description}
+      description={project.description || undefined}
       status={project.status}
-      startDate={project.startDate}
-      dueDate={project.dueDate}
+      startDate={project.startDate?.toISOString()}
+      dueDate={project.dueDate?.toISOString()}
       estimatedHours={project.estimatedHours}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
       {...props}
     />
   );
 }
 
-export function TaskCard({ task, ...props }) {
+export function TaskCard({ task, ...props }: TaskCardProps) {
+  const { handleEdit, handleDelete } = useCard({ type: 'task', id: task.id });
+  
   return (
     <BaseCard
       type="task"
       title={task.content}
-      description={task.description}
+      description={task.description || undefined}
       status={task.status}
-      startDate={task.startDate}
-      dueDate={task.dueDate}
+      startDate={task.startDate?.toISOString()}
+      dueDate={task.dueDate?.toISOString()}
       estimatedHours={task.estimatedHours}
       priority={task.priority}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
       {...props}
     />
   );
 }
 
-export function ObjectiveCard({ objective, ...props }) {
+export function ObjectiveCard({ objective, ...props }: ObjectiveCardProps) {
+  const { handleEdit, handleDelete } = useCard({ type: 'objective', id: objective.id });
+  
   return (
     <BaseCard
       type="objective"
       title={objective.name}
-      description={objective.description}
+      description={objective.description || undefined}
       status={objective.status}
-      startDate={objective.startDate}
-      dueDate={objective.dueDate}
+      startDate={objective.startDate?.toISOString()}
+      dueDate={objective.dueDate?.toISOString()}
       estimatedHours={objective.estimatedHours}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
       {...props}
     />
   );
 }
 
-export function TodoListCard({ todoList, ...props }) {
+export function TodoListCard({ todoList, ...props }: TodoListCardProps) {
+  const { handleEdit, handleDelete } = useCard({ type: 'todoList', id: todoList.id });
+  
   return (
     <BaseCard
       type="todoList"
       title={todoList.name}
       description={`${todoList.tasks?.length || 0} tasks`}
       variant="compact"
+      onEdit={handleEdit}
+      onDelete={handleDelete}
       {...props}
     />
   );
