@@ -1,46 +1,51 @@
-// src/hooks/useCard.ts
-import { useCallback } from 'react';
+// src/hooks/useCardList.ts
 import { useStore } from '@/store';
-import { EntityType } from '@/types';
-import { selectCardState } from '@/store/selectors/cards';
+import { selectCardState, selectFilteredAndSortedCards } from '@/store/selectors/cards';
+import type { Project, Task, Objective, TodoList, EntityType, Filterable } from '@/types';
 
-interface UseCardProps {
+interface UseCardListProps<T extends Filterable> {
   type: EntityType;
-  id: string;
+  items: T[];
+  onItemClick?: (item: T) => void;
 }
 
-interface UseCardReturn {
-  isSelected: boolean;
-  handleSelect: () => void;
-  handleEdit: () => void;
-  handleDelete: () => void;
+interface UseCardListReturn<T extends Filterable> {
+  view: 'grid' | 'list';
+  variant: 'default' | 'compact' | 'detailed';
+  filteredItems: T[];
+  handleViewChange: (view: 'grid' | 'list') => void;
+  handleVariantChange: (variant: 'default' | 'compact' | 'detailed') => void;
+  handleFilterStatus: (status: string | undefined) => void;
+  handleFilterPriority: (priority: string | undefined) => void;
+  handleSortChange: (sortBy: 'name' | 'date' | 'status' | 'priority' | undefined) => void;
+  handleSortDirectionToggle: () => void;
 }
 
-export const useCard = ({ type, id }: UseCardProps): UseCardReturn => {
+export function useCardList<T extends Filterable>({
+  type,
+  items,
+  onItemClick
+}: UseCardListProps<T>): UseCardListReturn<T> {
   const cardState = useStore(selectCardState);
-  const setSelectedCard = useStore((state) => state.setSelectedCard);
+  const setCardView = useStore((state) => state.setCardView);
+  const setCardVariant = useStore((state) => state.setCardVariant);
+  const setFilterStatus = useStore((state) => state.setFilterStatus);
+  const setFilterPriority = useStore((state) => state.setFilterPriority);
+  const setSortBy = useStore((state) => state.setSortBy);
+  const toggleSortDirection = useStore((state) => state.toggleSortDirection);
 
-  const isSelected = cardState.selectedCard?.id === id && 
-                    cardState.selectedCard?.type === type;
-
-  const handleSelect = useCallback(() => {
-    setSelectedCard(type, id);
-  }, [type, id, setSelectedCard]);
-
-  const handleEdit = useCallback(() => {
-    // Implement edit logic based on entity type
-    console.log(`Edit ${type} with id ${id}`);
-  }, [type, id]);
-
-  const handleDelete = useCallback(() => {
-    // Implement delete logic based on entity type
-    console.log(`Delete ${type} with id ${id}`);
-  }, [type, id]);
+  // Filter and sort items
+  const filteredItems = selectFilteredAndSortedCards(items, useStore.getState());
 
   return {
-    isSelected,
-    handleSelect,
-    handleEdit,
-    handleDelete,
+    view: cardState.cardView,
+    variant: cardState.cardVariant,
+    filteredItems,
+    handleViewChange: setCardView,
+    handleVariantChange: setCardVariant,
+    handleFilterStatus: (status) => setFilterStatus(status || null),
+    handleFilterPriority: (priority) => setFilterPriority(priority || null),
+    handleSortChange: (sortBy) => setSortBy(sortBy || null),
+    handleSortDirectionToggle: toggleSortDirection,
   };
-};
+}
