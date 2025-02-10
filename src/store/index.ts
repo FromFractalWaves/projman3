@@ -1,4 +1,3 @@
-
 // src/store/index.ts
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
@@ -8,49 +7,34 @@ import { createTaskSlice } from './slices/tasks';
 import { createObjectiveSlice } from './slices/objectives';
 import { createTodoListSlice } from './slices/todoLists';
 import { createTimeEntrySlice } from './slices/timeEntries';
+import { createCardSlice } from './slices/cards';
 
-const createGlobalSlice: StateCreator<StoreState> = (set, get) => ({
-  refreshAll: async () => {
-    await Promise.all([
-      get().fetchProjects(),
-      get().fetchObjectives(),
-      get().fetchTasks(),
-      get().fetchTodoLists(),
-      get().fetchTimeEntries()
-    ]);
-  },
-  clearErrors: () => {
-    set({
-      projectsError: null,
-      objectivesError: null,
-      tasksError: null,
-      todoListsError: null,
-      timeEntriesError: null
-    });
-  }
-});
-
-export const useStore = create<StoreState>()(
-  devtools(
-    persist(
-      (...a) => ({
-        ...createProjectSlice(...a),
-        ...createTaskSlice(...a),
-        ...createObjectiveSlice(...a),
-        ...createTodoListSlice(...a),
-        ...createTimeEntrySlice(...a),
-        ...createGlobalSlice(...a)
-      }),
-      {
-        name: 'project-management-store',
-        partialize: (state) => ({
-          projects: state.projects,
-          objectives: state.objectives,
-          tasks: state.tasks,
-          todoLists: state.todoLists,
-          timeEntries: state.timeEntries
-        })
-      }
+const createStore = () => 
+  create<StoreState>()(
+    devtools(
+      persist(
+        (...a) => ({
+          ...createProjectSlice(...a),
+          ...createTaskSlice(...a),
+          ...createObjectiveSlice(...a),
+          ...createTodoListSlice(...a),
+          ...createTimeEntrySlice(...a),
+          ...createCardSlice(...a),
+        }),
+        {
+          name: 'project-management-store',
+          partialize: (state) => ({
+            projects: state.projects,
+            objectives: state.objectives,
+            tasks: state.tasks,
+            todoLists: state.todoLists,
+            timeEntries: state.timeEntries,
+            cardView: state.cardView,
+            cardVariant: state.cardVariant,
+          })
+        }
+      )
     )
-  )
-);
+  );
+
+export const useStore = createStore();
