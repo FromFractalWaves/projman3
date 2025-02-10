@@ -1,8 +1,9 @@
 
 // src/store/selectors/cards.ts
-import type { StoreState } from '../types';
+import { StoreState } from '../types';
+import type { Filterable } from '@/types';
 
-export const selectCardState = (state: StoreState): CardState => ({
+export const selectCardState = (state: StoreState) => ({
   selectedCard: state.selectedCard,
   cardView: state.cardView,
   cardVariant: state.cardVariant,
@@ -12,17 +13,10 @@ export const selectCardState = (state: StoreState): CardState => ({
   sortDirection: state.sortDirection,
 });
 
-interface Filterable {
-  status?: string;
-  priority?: string;
-  createdAt?: Date;
-  name?: string;
-}
-
 export const filterCards = <T extends Filterable>(
   items: T[],
-  filterStatus?: string,
-  filterPriority?: string
+  filterStatus: string | null,
+  filterPriority: string | null
 ): T[] => {
   return items.filter(item => {
     const statusMatch = !filterStatus || item.status === filterStatus;
@@ -33,9 +27,11 @@ export const filterCards = <T extends Filterable>(
 
 export const sortCards = <T extends Filterable>(
   items: T[],
-  sortBy?: 'name' | 'date' | 'status' | 'priority',
+  sortBy: 'name' | 'date' | 'status' | 'priority' | null,
   sortDirection: 'asc' | 'desc' = 'asc'
 ): T[] => {
+  if (!sortBy) return items;
+
   const sorted = [...items].sort((a, b) => {
     switch (sortBy) {
       case 'name':
