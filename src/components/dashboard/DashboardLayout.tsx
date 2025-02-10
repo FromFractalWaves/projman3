@@ -2,8 +2,9 @@
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui/button';
-import { BarChart2, CheckSquare, Folder, ListChecks, Calendar, Clock } from 'lucide-react';
+import { BarChart2, CheckSquare, Folder, ListChecks } from 'lucide-react';
 import type { Project, Objective, Task, TodoList } from '@/types';
+import { CardList } from '@/components/cards';
 import TaskManagementButtons from '@/components/tasks/TaskManagementButtons';
 
 export interface DashboardLayoutProps {
@@ -27,7 +28,7 @@ export function DashboardLayout({
   taskStats,
   onRefresh
 }: DashboardLayoutProps) {
-  // Calculate statistics for the stats card.
+  // Calculate statistics for the stats card
   const stats = useMemo(() => [
     { value: projects.length, label: 'Total Projects' },
     { value: objectives.length, label: 'Total Objectives' },
@@ -77,41 +78,16 @@ export function DashboardLayout({
                 Refresh
               </Button>
             </div>
-            <div className="space-y-4">
-              {projects.map(project => (
-                <div key={project.id} className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg space-y-2">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold text-gray-100">{project.name}</h3>
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-400">
-                      {project.status}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400">{project.description}</p>
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center gap-1 text-gray-400">
-                      <Clock size={16} />
-                      Est: {project.estimatedHours}h
-                    </div>
-                    {project.startDate && project.dueDate && (
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          <span>Due: {new Date(project.dueDate).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CardList
+              type="project"
+              items={projects}
+              layout="grid"
+              variant="default"
+            />
           </div>
         </div>
 
-        {/* Right Column - Tasks, Task Management, and Todo Lists */}
+        {/* Right Column - Tasks and Todo Lists */}
         <div className="space-y-6">
           {/* Recent Tasks Section */}
           <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
@@ -119,19 +95,12 @@ export function DashboardLayout({
               <CheckSquare size={20} />
               <h2 className="text-lg font-semibold">Recent Tasks</h2>
             </div>
-            <div className="space-y-4">
-              {tasks.slice(0, 5).map(task => (
-                <div key={task.id} className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg space-y-2">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold text-gray-100">{task.content}</h3>
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-red-500/10 text-red-400">
-                      {task.priority}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400">{task.description}</p>
-                </div>
-              ))}
-            </div>
+            <CardList
+              type="task"
+              items={tasks.slice(0, 5)}
+              layout="list"
+              variant="compact"
+            />
           </div>
 
           {/* Task Management Section */}
@@ -146,21 +115,12 @@ export function DashboardLayout({
               <ListChecks size={20} />
               <h2 className="text-lg font-semibold">Todo Lists</h2>
             </div>
-            <div className="space-y-3">
-              {todoLists.map(list => (
-                <div key={list.id} className="flex justify-between items-center p-4 bg-gray-800/50 border border-gray-700 rounded-lg hover:bg-gray-800/70 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-100">{list.name}</span>
-                    <span className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-400">
-                      {list.type}
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-400">
-                    {list.tasks?.length || 0} tasks
-                  </span>
-                </div>
-              ))}
-            </div>
+            <CardList
+              type="todoList"
+              items={todoLists}
+              layout="list"
+              variant="compact"
+            />
           </div>
         </div>
       </div>
