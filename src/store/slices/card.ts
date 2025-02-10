@@ -1,32 +1,54 @@
-// src/store/slices/cards.ts
+
+// src/store/slices/card.ts
 import { StateCreator } from 'zustand';
-import { Project, Task, Objective, TodoList } from '@/types';
+
+export type CardViewType = 'grid' | 'list';
+export type CardVariantType = 'default' | 'compact' | 'detailed';
+export type CardSortType = 'name' | 'date' | 'status' | 'priority' | null;
+export type SortDirectionType = 'asc' | 'desc';
+
+export interface SelectedCard {
+  type: 'project' | 'task' | 'objective' | 'todoList';
+  id: string;
+}
 
 export interface CardState {
-  view: 'grid' | 'list';
-  variant: 'default' | 'compact' | 'detailed';
-  sortBy?: 'name' | 'date' | 'status' | 'priority';
-  sortDirection: 'asc' | 'desc';
+  selectedCard: SelectedCard | null;
+  cardView: CardViewType;
+  cardVariant: CardVariantType;
+  filterStatus: string | null;
+  filterPriority: string | null;
+  sortBy: CardSortType;
+  sortDirection: SortDirectionType;
 }
 
 export interface CardSlice extends CardState {
-  setView: (view: 'grid' | 'list') => void;
-  setVariant: (variant: 'default' | 'compact' | 'detailed') => void;
-  setSortBy: (sortBy?: 'name' | 'date' | 'status' | 'priority') => void;
+  setSelectedCard: (card: SelectedCard | null) => void;
+  setCardView: (view: CardViewType) => void;
+  setCardVariant: (variant: CardVariantType) => void;
+  setFilterStatus: (status: string | null) => void;
+  setFilterPriority: (priority: string | null) => void;
+  setSortBy: (sortBy: CardSortType) => void;
   toggleSortDirection: () => void;
 }
 
 export const createCardSlice: StateCreator<CardSlice> = (set) => ({
-  // Initial state
-  view: 'grid',
-  variant: 'default',
+  selectedCard: null,
+  cardView: 'grid',
+  cardVariant: 'default',
+  filterStatus: null,
+  filterPriority: null,
+  sortBy: null,
   sortDirection: 'asc',
 
-  // Actions
-  setView: (view) => set({ view }),
-  setVariant: (variant) => set({ variant }),
+  setSelectedCard: (card) => set({ selectedCard: card }),
+  setCardView: (view) => set({ cardView: view }),
+  setCardVariant: (variant) => set({ cardVariant: variant }),
+  setFilterStatus: (status) => set({ filterStatus: status }),
+  setFilterPriority: (priority) => set({ filterPriority: priority }),
   setSortBy: (sortBy) => set({ sortBy }),
-  toggleSortDirection: () => set((state) => ({ 
-    sortDirection: state.sortDirection === 'asc' ? 'desc' : 'asc' 
-  })),
+  toggleSortDirection: () => 
+    set((state) => ({ 
+      sortDirection: state.sortDirection === 'asc' ? 'desc' : 'asc' 
+    })),
 });
