@@ -13,16 +13,16 @@ import {
   TodoListFormData,
   TimeEntryFormData 
 } from '@/types'
-import { 
-  projectsApi, 
-  objectivesApi, 
-  tasksApi, 
-  todoListsApi, 
-  timeEntriesApi 
-} from '@/lib/api'
 
-interface StoreState {
-  // Project State
+// Import individual APIs instead of using barrel imports
+import { projectsApi } from '@/lib/api/projects'
+import { objectivesApi } from '@/lib/api/objectives'
+import { tasksApi } from '@/lib/api/tasks'
+import { todoListsApi } from '@/lib/api/todoLists'
+import { timeEntriesApi } from '@/lib/api/timeEntries'
+
+// Project State
+interface ProjectState {
   projects: Project[]
   projectsLoading: boolean
   projectsError: Error | null
@@ -30,8 +30,10 @@ interface StoreState {
   createProject: (data: ProjectFormData) => Promise<void>
   updateProject: (id: string, data: Partial<ProjectFormData>) => Promise<void>
   deleteProject: (id: string) => Promise<void>
+}
 
-  // Objective State
+// Objective State
+interface ObjectiveState {
   objectives: Objective[]
   objectivesLoading: boolean
   objectivesError: Error | null
@@ -39,8 +41,10 @@ interface StoreState {
   createObjective: (data: ObjectiveFormData) => Promise<void>
   updateObjective: (id: string, data: Partial<ObjectiveFormData>) => Promise<void>
   deleteObjective: (id: string) => Promise<void>
+}
 
-  // Task State
+// Task State
+interface TaskState {
   tasks: Task[]
   tasksLoading: boolean
   tasksError: Error | null
@@ -48,8 +52,10 @@ interface StoreState {
   createTask: (data: TaskFormData) => Promise<void>
   updateTask: (id: string, data: Partial<TaskFormData>) => Promise<void>
   deleteTask: (id: string) => Promise<void>
+}
 
-  // TodoList State
+// TodoList State
+interface TodoListState {
   todoLists: TodoList[]
   todoListsLoading: boolean
   todoListsError: Error | null
@@ -57,8 +63,10 @@ interface StoreState {
   createTodoList: (data: TodoListFormData) => Promise<void>
   updateTodoList: (id: string, data: Partial<TodoListFormData>) => Promise<void>
   deleteTodoList: (id: string) => Promise<void>
+}
 
-  // TimeEntry State
+// TimeEntry State
+interface TimeEntryState {
   timeEntries: TimeEntry[]
   timeEntriesLoading: boolean
   timeEntriesError: Error | null
@@ -66,17 +74,35 @@ interface StoreState {
   createTimeEntry: (data: TimeEntryFormData) => Promise<void>
   updateTimeEntry: (id: string, data: Partial<TimeEntryFormData>) => Promise<void>
   deleteTimeEntry: (id: string) => Promise<void>
+}
 
-  // Global Actions
+// Global Actions
+interface GlobalActions {
   refreshAll: () => Promise<void>
   clearErrors: () => void
 }
 
+// Combined Store State
+export interface StoreState extends 
+  ProjectState, 
+  ObjectiveState, 
+  TaskState, 
+  TodoListState, 
+  TimeEntryState,
+  GlobalActions {}
+
+// Middleware Options Types
+interface PersistOptions {
+  name: string
+  partialize: (state: StoreState) => Partial<StoreState>
+}
+
+// Create the store
 export const useStore = create<StoreState>()(
   devtools(
     persist(
       (set, get) => ({
-        // Project State
+        // Project State Implementation
         projects: [],
         projectsLoading: false,
         projectsError: null,
@@ -91,11 +117,11 @@ export const useStore = create<StoreState>()(
             set({ projectsLoading: false })
           }
         },
-        createProject: async (data) => {
+        createProject: async (data: ProjectFormData) => {
           set({ projectsLoading: true })
           try {
             const newProject = await projectsApi.createProject(data)
-            set(state => ({ 
+            set((state) => ({ 
               projects: [...state.projects, newProject],
               projectsError: null 
             }))
@@ -105,12 +131,12 @@ export const useStore = create<StoreState>()(
             set({ projectsLoading: false })
           }
         },
-        updateProject: async (id, data) => {
+        updateProject: async (id: string, data: Partial<ProjectFormData>) => {
           set({ projectsLoading: true })
           try {
             const updatedProject = await projectsApi.updateProject(id, data)
-            set(state => ({
-              projects: state.projects.map(p => 
+            set((state) => ({
+              projects: state.projects.map((p) => 
                 p.id === id ? updatedProject : p
               ),
               projectsError: null
@@ -121,12 +147,12 @@ export const useStore = create<StoreState>()(
             set({ projectsLoading: false })
           }
         },
-        deleteProject: async (id) => {
+        deleteProject: async (id: string) => {
           set({ projectsLoading: true })
           try {
             await projectsApi.deleteProject(id)
-            set(state => ({
-              projects: state.projects.filter(p => p.id !== id),
+            set((state) => ({
+              projects: state.projects.filter((p) => p.id !== id),
               projectsError: null
             }))
           } catch (error) {
@@ -136,7 +162,7 @@ export const useStore = create<StoreState>()(
           }
         },
 
-        // Objective State
+        // Objective State Implementation
         objectives: [],
         objectivesLoading: false,
         objectivesError: null,
@@ -151,11 +177,11 @@ export const useStore = create<StoreState>()(
             set({ objectivesLoading: false })
           }
         },
-        createObjective: async (data) => {
+        createObjective: async (data: ObjectiveFormData) => {
           set({ objectivesLoading: true })
           try {
             const newObjective = await objectivesApi.createObjective(data)
-            set(state => ({
+            set((state) => ({
               objectives: [...state.objectives, newObjective],
               objectivesError: null
             }))
@@ -165,12 +191,12 @@ export const useStore = create<StoreState>()(
             set({ objectivesLoading: false })
           }
         },
-        updateObjective: async (id, data) => {
+        updateObjective: async (id: string, data: Partial<ObjectiveFormData>) => {
           set({ objectivesLoading: true })
           try {
             const updatedObjective = await objectivesApi.updateObjective(id, data)
-            set(state => ({
-              objectives: state.objectives.map(o =>
+            set((state) => ({
+              objectives: state.objectives.map((o) =>
                 o.id === id ? updatedObjective : o
               ),
               objectivesError: null
@@ -181,12 +207,12 @@ export const useStore = create<StoreState>()(
             set({ objectivesLoading: false })
           }
         },
-        deleteObjective: async (id) => {
+        deleteObjective: async (id: string) => {
           set({ objectivesLoading: true })
           try {
             await objectivesApi.deleteObjective(id)
-            set(state => ({
-              objectives: state.objectives.filter(o => o.id !== id),
+            set((state) => ({
+              objectives: state.objectives.filter((o) => o.id !== id),
               objectivesError: null
             }))
           } catch (error) {
@@ -196,7 +222,7 @@ export const useStore = create<StoreState>()(
           }
         },
 
-        // Task State
+        // Task State Implementation
         tasks: [],
         tasksLoading: false,
         tasksError: null,
@@ -211,11 +237,11 @@ export const useStore = create<StoreState>()(
             set({ tasksLoading: false })
           }
         },
-        createTask: async (data) => {
+        createTask: async (data: TaskFormData) => {
           set({ tasksLoading: true })
           try {
             const newTask = await tasksApi.createTask(data)
-            set(state => ({
+            set((state) => ({
               tasks: [...state.tasks, newTask],
               tasksError: null
             }))
@@ -225,12 +251,12 @@ export const useStore = create<StoreState>()(
             set({ tasksLoading: false })
           }
         },
-        updateTask: async (id, data) => {
+        updateTask: async (id: string, data: Partial<TaskFormData>) => {
           set({ tasksLoading: true })
           try {
             const updatedTask = await tasksApi.updateTask(id, data)
-            set(state => ({
-              tasks: state.tasks.map(t =>
+            set((state) => ({
+              tasks: state.tasks.map((t) =>
                 t.id === id ? updatedTask : t
               ),
               tasksError: null
@@ -241,12 +267,12 @@ export const useStore = create<StoreState>()(
             set({ tasksLoading: false })
           }
         },
-        deleteTask: async (id) => {
+        deleteTask: async (id: string) => {
           set({ tasksLoading: true })
           try {
             await tasksApi.deleteTask(id)
-            set(state => ({
-              tasks: state.tasks.filter(t => t.id !== id),
+            set((state) => ({
+              tasks: state.tasks.filter((t) => t.id !== id),
               tasksError: null
             }))
           } catch (error) {
@@ -256,7 +282,7 @@ export const useStore = create<StoreState>()(
           }
         },
 
-        // TodoList State
+        // TodoList State Implementation
         todoLists: [],
         todoListsLoading: false,
         todoListsError: null,
@@ -271,11 +297,11 @@ export const useStore = create<StoreState>()(
             set({ todoListsLoading: false })
           }
         },
-        createTodoList: async (data) => {
+        createTodoList: async (data: TodoListFormData) => {
           set({ todoListsLoading: true })
           try {
             const newTodoList = await todoListsApi.createTodoList(data)
-            set(state => ({
+            set((state) => ({
               todoLists: [...state.todoLists, newTodoList],
               todoListsError: null
             }))
@@ -285,12 +311,12 @@ export const useStore = create<StoreState>()(
             set({ todoListsLoading: false })
           }
         },
-        updateTodoList: async (id, data) => {
+        updateTodoList: async (id: string, data: Partial<TodoListFormData>) => {
           set({ todoListsLoading: true })
           try {
             const updatedTodoList = await todoListsApi.updateTodoList(id, data)
-            set(state => ({
-              todoLists: state.todoLists.map(t =>
+            set((state) => ({
+              todoLists: state.todoLists.map((t) =>
                 t.id === id ? updatedTodoList : t
               ),
               todoListsError: null
@@ -301,12 +327,12 @@ export const useStore = create<StoreState>()(
             set({ todoListsLoading: false })
           }
         },
-        deleteTodoList: async (id) => {
+        deleteTodoList: async (id: string) => {
           set({ todoListsLoading: true })
           try {
             await todoListsApi.deleteTodoList(id)
-            set(state => ({
-              todoLists: state.todoLists.filter(t => t.id !== id),
+            set((state) => ({
+              todoLists: state.todoLists.filter((t) => t.id !== id),
               todoListsError: null
             }))
           } catch (error) {
@@ -316,7 +342,7 @@ export const useStore = create<StoreState>()(
           }
         },
 
-        // TimeEntry State
+        // TimeEntry State Implementation
         timeEntries: [],
         timeEntriesLoading: false,
         timeEntriesError: null,
@@ -331,11 +357,11 @@ export const useStore = create<StoreState>()(
             set({ timeEntriesLoading: false })
           }
         },
-        createTimeEntry: async (data) => {
+        createTimeEntry: async (data: TimeEntryFormData) => {
           set({ timeEntriesLoading: true })
           try {
             const newTimeEntry = await timeEntriesApi.createTimeEntry(data)
-            set(state => ({
+            set((state) => ({
               timeEntries: [...state.timeEntries, newTimeEntry],
               timeEntriesError: null
             }))
@@ -345,12 +371,12 @@ export const useStore = create<StoreState>()(
             set({ timeEntriesLoading: false })
           }
         },
-        updateTimeEntry: async (id, data) => {
+        updateTimeEntry: async (id: string, data: Partial<TimeEntryFormData>) => {
           set({ timeEntriesLoading: true })
           try {
             const updatedTimeEntry = await timeEntriesApi.updateTimeEntry(id, data)
-            set(state => ({
-              timeEntries: state.timeEntries.map(t =>
+            set((state) => ({
+              timeEntries: state.timeEntries.map((t) =>
                 t.id === id ? updatedTimeEntry : t
               ),
               timeEntriesError: null
@@ -361,12 +387,12 @@ export const useStore = create<StoreState>()(
             set({ timeEntriesLoading: false })
           }
         },
-        deleteTimeEntry: async (id) => {
+        deleteTimeEntry: async (id: string) => {
           set({ timeEntriesLoading: true })
           try {
             await timeEntriesApi.deleteTimeEntry(id)
-            set(state => ({
-              timeEntries: state.timeEntries.filter(t => t.id !== id),
+            set((state) => ({
+              timeEntries: state.timeEntries.filter((t) => t.id !== id),
               timeEntriesError: null
             }))
           } catch (error) {
@@ -376,7 +402,7 @@ export const useStore = create<StoreState>()(
           }
         },
 
-        // Global Actions
+        // Global Actions Implementation
         refreshAll: async () => {
           await Promise.all([
             get().fetchProjects(),
@@ -405,7 +431,7 @@ export const useStore = create<StoreState>()(
           todoLists: state.todoLists,
           timeEntries: state.timeEntries
         })
-      }
+      } as PersistOptions
     )
   )
 )
