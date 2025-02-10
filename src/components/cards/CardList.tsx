@@ -4,8 +4,7 @@ import { ProjectCard, TaskCard, ObjectiveCard, TodoListCard } from './BaseCard';
 import { CardViewControls } from '@/components/ui/CardViewControls';
 import { useCardList } from '@/hooks/useCardList';
 import { useCardView } from '@/hooks/useCardView';
-import type { Project, Task, Objective, TodoList } from '@/types';
-import type { EntityType } from '@/types';
+import type { Project, Task, Objective, TodoList, EntityType } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CardListProps {
@@ -24,15 +23,19 @@ export function CardList({
   const {
     view,
     variant,
-    filteredItems,
+    items: sortedItems,
     handleViewChange,
     handleVariantChange,
     handleSortDirectionToggle
-  } = useCardList({ type, items, onItemClick });
+  } = useCardList({
+    type,
+    items,
+    onItemClick
+  });
 
   const { getLayoutClasses } = useCardView();
 
-  const getCardComponent = (item: any) => {
+  const getCardComponent = (item: Project | Task | Objective | TodoList) => {
     switch (type) {
       case 'project':
         return (
@@ -75,7 +78,7 @@ export function CardList({
     }
   };
 
-  if (!filteredItems?.length) {
+  if (!sortedItems?.length) {
     return (
       <div className="p-4 text-center text-zinc-500 bg-zinc-900/50 border border-zinc-800 rounded-lg">
         No items to display
@@ -95,7 +98,7 @@ export function CardList({
       </div>
 
       <div className={cn(getLayoutClasses(), className)}>
-        {filteredItems.map((item) => (
+        {sortedItems.map((item) => (
           <React.Fragment key={item.id}>
             {getCardComponent(item)}
           </React.Fragment>
@@ -104,5 +107,3 @@ export function CardList({
     </div>
   );
 }
-
-export default CardList;
