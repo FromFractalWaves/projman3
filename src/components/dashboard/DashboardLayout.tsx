@@ -1,15 +1,8 @@
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
-import { Timeline } from '@/components/ui/timeline';
-import { useTimeline } from '@/hooks/useTimeline';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { BarChart2, CheckSquare, Folder, ListChecks, Calendar, Clock } from 'lucide-react';
 import type { Project, Objective, Task, TodoList } from '@/types';
-import { 
-  LayoutGrid,
-  CheckCircle2,
-  Clock,
-  AlertCircle
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 export interface DashboardLayoutProps {
   projects: Project[];
@@ -24,70 +17,6 @@ export interface DashboardLayoutProps {
   onRefresh: () => Promise<void>;
 }
 
-// Stats Card Component - Keeping it inline as in your code
-const StatsCard = ({ label, value, icon, color }: { 
-  label: string;
-  value: number | string;
-  icon: React.ReactNode;
-  color: string;
-}) => (
-  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex items-center gap-4">
-    <div className={`p-2 rounded-full ${color}`}>
-      {icon}
-    </div>
-    <div>
-      <p className="text-sm text-zinc-400">{label}</p>
-      <p className="text-2xl font-semibold text-white">{value}</p>
-    </div>
-  </div>
-);
-
-// Project Card Component - Keeping it inline as in your code
-const ProjectCard = ({ project }: { project: Project }) => (
-  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:bg-zinc-800/80 transition-colors">
-    <h3 className="font-semibold text-lg text-white">{project.name}</h3>
-    {project.description && (
-      <p className="text-sm text-zinc-300 mt-1">{project.description}</p>
-    )}
-    <div className="mt-4 flex gap-4">
-      <div>
-        <p className="text-xs text-zinc-400">Status</p>
-        <p className="text-sm text-white">{project.status}</p>
-      </div>
-      <div>
-        <p className="text-xs text-zinc-400">Tasks</p>
-        <p className="text-sm text-white">
-          {project.tasks?.length || 0}
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-// Task List Component - Keeping it inline as in your code
-const TaskList = ({ tasks }: { tasks: Task[] }) => (
-  <div className="space-y-2">
-    {tasks.map(task => (
-      <div 
-        key={task.id}
-        className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 hover:bg-zinc-800/80 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            task.priority === 'high' ? 'bg-red-400' :
-            task.priority === 'medium' ? 'bg-amber-400' :
-            'bg-emerald-400'
-          }`} />
-          <p className="text-white">{task.content}</p>
-        </div>
-        {task.description && (
-          <p className="text-sm text-zinc-300 mt-1 ml-4">{task.description}</p>
-        )}
-      </div>
-    ))}
-  </div>
-);
-
 export function DashboardLayout({
   projects,
   objectives,
@@ -96,127 +25,134 @@ export function DashboardLayout({
   taskStats,
   onRefresh
 }: DashboardLayoutProps) {
-  const router = useRouter();
-  
-  // Get timeline events using the hook
-  const { events } = useTimeline({ projects, objectives, tasks });
-  const recentEvents = events
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
-
   const stats = useMemo(() => [
-    {
-      label: 'Total Tasks',
-      value: tasks.length,
-      icon: <LayoutGrid className="h-5 w-5 text-emerald-400" />,
-      color: 'bg-emerald-400/10'
-    },
-    {
-      label: 'Completed',
-      value: taskStats.done,
-      icon: <CheckCircle2 className="h-5 w-5 text-blue-400" />,
-      color: 'bg-blue-400/10'
-    },
-    {
-      label: 'In Progress',
-      value: taskStats.inProgress,
-      icon: <Clock className="h-5 w-5 text-amber-400" />,
-      color: 'bg-amber-400/10'
-    },
-    {
-      label: 'High Priority',
-      value: tasks.filter(t => t.priority === 'high').length,
-      icon: <AlertCircle className="h-5 w-5 text-red-400" />,
-      color: 'bg-red-400/10'
-    }
-  ], [tasks, taskStats]);
-
-  const recentTasks = tasks
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
-
-  const handleTimelineEventClick = (event) => {
-    switch (event.type) {
-      case 'project':
-        router.push(`/projects/${event.entityId}`);
-        break;
-      case 'objective':
-        router.push(`/objectives/${event.entityId}`);
-        break;
-      case 'task':
-        router.push(`/tasks/${event.entityId}`);
-        break;
-    }
-  };
+    { value: projects.length, label: 'Total Projects' },
+    { value: objectives.length, label: 'Total Objectives' },
+    { value: tasks.length, label: 'Total Tasks' },
+    { value: taskStats.done, label: 'Completed Tasks' },
+    { value: taskStats.inProgress, label: 'Tasks In Progress' },
+    { value: tasks.filter(t => t.priority === 'high').length, label: 'High Priority Tasks' }
+  ], [projects.length, objectives.length, tasks, taskStats]);
 
   return (
-    <div className="space-y-6 p-6 bg-black min-h-screen">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
+    <div className="min-h-screen bg-gray-900 text-white p-6 space-y-6">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Project Dashboard</h1>
+        <p className="text-gray-400">
+          Managing {projects.length} projects with {objectives.length} objectives and {tasks.length} tasks
+        </p>
+      </header>
+
+      {/* Stats Section */}
+      <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart2 size={20} />
+          <h2 className="text-lg font-semibold">Statistics</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {stats.map((stat, i) => (
+            <div key={i} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+              <h4 className="text-2xl font-bold text-gray-100">{stat.value}</h4>
+              <p className="text-sm text-gray-400">{stat.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Projects Section */}
-        <Card className="lg:col-span-2 bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-white">Recent Projects</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {projects.slice(0, 3).map(project => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Recent Tasks Section */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-white">Recent Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TaskList tasks={recentTasks} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Todo Lists Section */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-white">Todo Lists</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {todoLists.map(list => (
-                <div 
-                  key={list.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:bg-zinc-800/80 transition-colors"
-                >
-                  <h3 className="font-semibold text-white">{list.name}</h3>
-                  <p className="text-sm text-zinc-300 mt-1">
-                    {list.tasks?.length || 0} tasks
-                  </p>
+        {/* Projects Column */}
+        <div className="lg:col-span-2">
+          <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Folder size={20} />
+                <h2 className="text-lg font-semibold">Projects</h2>
+              </div>
+              <Button variant="ghost" size="sm" onClick={onRefresh}>
+                Refresh
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {projects.map(project => (
+                <div key={project.id} className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg space-y-2">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-semibold text-gray-100">{project.name}</h3>
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-400">
+                      {project.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400">{project.description}</p>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <div className="flex items-center gap-1 text-gray-400">
+                      <Clock size={16} />
+                      Est: {project.estimatedHours}h
+                    </div>
+                    {project.startDate && project.dueDate && (
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          Start: {new Date(project.startDate).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          Due: {new Date(project.dueDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Timeline Section */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-white">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Timeline 
-              events={recentEvents} 
-              onEventClick={handleTimelineEventClick}
-            />
-          </CardContent>
-        </Card>
+        {/* Right Column - Tasks and Todo Lists */}
+        <div className="space-y-6">
+          {/* Tasks Section */}
+          <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckSquare size={20} />
+              <h2 className="text-lg font-semibold">Recent Tasks</h2>
+            </div>
+            <div className="space-y-4">
+              {tasks.slice(0, 5).map(task => (
+                <div key={task.id} className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg space-y-2">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-semibold text-gray-100">{task.content}</h3>
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-red-500/10 text-red-400">
+                      {task.priority}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400">{task.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Todo Lists Section */}
+          <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <ListChecks size={20} />
+              <h2 className="text-lg font-semibold">Todo Lists</h2>
+            </div>
+            <div className="space-y-3">
+              {todoLists.map(list => (
+                <div key={list.id} className="flex justify-between items-center p-4 bg-gray-800/50 border border-gray-700 rounded-lg hover:bg-gray-800/70 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-100">{list.name}</span>
+                    <span className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-400">
+                      {list.type}
+                    </span>
+                  </div>
+                  <span className="text-sm text-gray-400">
+                    {list.tasks?.length || 0} tasks
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
