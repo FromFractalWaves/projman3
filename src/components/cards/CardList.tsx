@@ -1,15 +1,16 @@
 // src/components/cards/CardList.tsx
 import React from 'react';
 import { ProjectCard, TaskCard, ObjectiveCard, TodoListCard } from './BaseCard';
+import { CardViewControls } from '@/components/ui/CardViewControls';
+import { useCardList } from '@/hooks/useCardList';
+import { useCardView } from '@/hooks/useCardView';
 import type { Project, Task, Objective, TodoList } from '@/types';
-import type { EntityType } from './BaseCard';
+import type { EntityType } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CardListProps {
   type: EntityType;
   items: Array<Project | Task | Objective | TodoList>;
-  layout?: 'grid' | 'list';
-  variant?: 'default' | 'compact';
   onItemClick?: (item: Project | Task | Objective | TodoList) => void;
   className?: string;
 }
@@ -17,11 +18,20 @@ interface CardListProps {
 export function CardList({
   type,
   items,
-  layout = 'grid',
-  variant = 'default',
   onItemClick,
   className
 }: CardListProps) {
+  const {
+    view,
+    variant,
+    filteredItems,
+    handleViewChange,
+    handleVariantChange,
+    handleSortDirectionToggle
+  } = useCardList({ type, items, onItemClick });
+
+  const { getLayoutClasses } = useCardView();
+
   const getCardComponent = (item: any) => {
     switch (type) {
       case 'project':
@@ -65,7 +75,7 @@ export function CardList({
     }
   };
 
-  if (!items?.length) {
+  if (!filteredItems?.length) {
     return (
       <div className="p-4 text-center text-zinc-500 bg-zinc-900/50 border border-zinc-800 rounded-lg">
         No items to display
@@ -74,19 +84,25 @@ export function CardList({
   }
 
   return (
-    <div
-      className={cn(
-        layout === 'grid'
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-          : 'space-y-3',
-        className
-      )}
-    >
-      {items.map((item) => 
-        <React.Fragment key={item.id}>
-          {getCardComponent(item)}
-        </React.Fragment>
-      )}
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <CardViewControls
+          view={view}
+          onViewChange={handleViewChange}
+          onVariantChange={handleVariantChange}
+          onSortToggle={handleSortDirectionToggle}
+        />
+      </div>
+
+      <div className={cn(getLayoutClasses(), className)}>
+        {filteredItems.map((item) => (
+          <React.Fragment key={item.id}>
+            {getCardComponent(item)}
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   );
 }
+
+export default CardList;
