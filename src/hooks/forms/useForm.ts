@@ -1,6 +1,7 @@
 // src/hooks/forms/useForm.ts
 import { useState, useCallback } from 'react';
 import type { FormState, FormConfig, UseFormReturn } from '@/types/forms/base';
+import { FormEvent } from 'react';
 
 export function useForm<T extends Record<string, any>>(config: FormConfig<T>): UseFormReturn<T> {
   const [formState, setFormState] = useState<FormState<T>>({
@@ -98,7 +99,7 @@ export function useForm<T extends Record<string, any>>(config: FormConfig<T>): U
     return {};
   }, [config, formState.values]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: FormEvent) => { // Changed type here
     e.preventDefault();
     setFormState(prev => ({ 
       ...prev, 
