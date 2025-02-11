@@ -1,0 +1,73 @@
+I'll create an outline of all the files we need to modify or create to implement this enhanced card system.
+1. Types/Interfaces:
+
+/src/types/cards/
+  - cardActions.ts       (new) - Action interfaces
+  - cardProps.ts        (new) - Props interfaces
+  - cardState.ts        (new) - State management types
+  - index.ts           (new) - Export everything
+
+2. Core Card Components:
+
+/src/components/cards/
+  - BaseCard.tsx       (modify) - Enhanced base card
+  - CardActions.tsx    (new) - Action buttons component
+  - CardHeader.tsx     (new) - Card header with status/badges
+  - CardContent.tsx    (new) - Main content area
+  - CardFooter.tsx     (new) - Footer with dates/times
+
+3. Specific Card Implementations:
+
+/src/components/cards/
+  - ProjectCard/
+    - ProjectCard.tsx
+    - ProjectCardActions.tsx
+    - ProjectCardStats.tsx
+  - TaskCard/
+    - TaskCard.tsx
+    - TaskCardActions.tsx
+    - TaskCardProgress.tsx
+  - ObjectiveCard/
+    - ObjectiveCard.tsx
+    - ObjectiveCardActions.tsx
+    - ObjectiveCardProgress.tsx
+  - TodoListCard/
+    - TodoListCard.tsx
+    - TodoListCardActions.tsx
+    - TodoListCardStats.tsx
+
+4. Hooks and Utilities:
+
+/src/hooks/cards/
+  - useCard.ts         (modify) - Enhanced base hook
+  - useProjectCard.ts  (new)
+  - useTaskCard.ts     (new)
+  - useObjectiveCard.ts (new)
+  - useTodoListCard.ts (new)
+
+5. Shared Utils:
+
+/src/lib/utils/cards/
+  - cardStyles.ts      (new) - Shared styling utilities
+  - cardFormatters.ts  (new) - Date/time formatting
+  - cardValidators.ts  (new) - Validation helpers
+
+Implementation Order:
+1. First implement all types/interfaces
+2. Then build core components
+3. Create shared utilities and hooks
+4. Implement each specific card type one at a time
+5. Update any existing components that use cards
+Each file can be implemented independently and then brought together. Would you like me to start with any particular file or section? I can provide the full implementation for any of these files in the next message.
+Also, since you mentioned starting fresh chats for each file - here's a good breakdown of separate chats you might want to create:
+1. Chat 1: Types/Interfaces implementation
+2. Chat 2: Core Card Components
+3. Chat 3: Project Card Implementation
+4. Chat 4: Task Card Implementation
+5. Chat 5: Objective Card Implementation
+6. Chat 6: TodoList Card Implementation
+7. Chat 7: Hooks and Utilities
+8. Chat 8: Final Integration
+Each chat can focus on its specific area and build upon the previously implemented pieces. Would you like me to provide the detailed code for any of these sections?
+
+please do /src/types/cards/cardActions.ts
