@@ -2,9 +2,9 @@
 import React from 'react';
 import { ProjectCard, TaskCard, ObjectiveCard, TodoListCard } from './BaseCard';
 import { CardViewControls } from '@/components/ui/CardViewControls';
-import { useCardList } from '@/hooks/useCardList';
-import { useCardView } from '@/hooks/useCardView';
-import type { Project, Task, Objective, TodoList, EntityType } from '@/types';
+import { useCardViewState } from '@/hooks/useCardViewState';
+import { useCardFilterState } from '@/hooks/useCardFilterState';
+import type { Project, Task, Objective, TodoList, EntityType, BaseEntity } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CardListProps {
@@ -20,20 +20,21 @@ export function CardList({
   onItemClick,
   className
 }: CardListProps) {
+  // Separate view state management
   const {
     view,
     variant,
-    items: sortedItems,
-    handleViewChange,
-    handleVariantChange,
-    handleSortDirectionToggle
-  } = useCardList({
-    type,
-    items,
-    onItemClick
-  });
+    setView,
+    setVariant,
+    getLayoutClasses,
+  } = useCardViewState();
 
-  const { getLayoutClasses } = useCardView();
+  // Separate filtering and sorting state management
+  const {
+    filteredItems,
+    sortDirection,
+    toggleSortDirection,
+  } = useCardFilterState(items);
 
   const getCardComponent = (item: Project | Task | Objective | TodoList) => {
     switch (type) {
@@ -78,7 +79,7 @@ export function CardList({
     }
   };
 
-  if (!sortedItems?.length) {
+  if (!filteredItems?.length) {
     return (
       <div className="p-4 text-center text-zinc-500 bg-zinc-900/50 border border-zinc-800 rounded-lg">
         No items to display
@@ -91,14 +92,15 @@ export function CardList({
       <div className="flex justify-between items-center">
         <CardViewControls
           view={view}
-          onViewChange={handleViewChange}
-          onVariantChange={handleVariantChange}
-          onSortToggle={handleSortDirectionToggle}
+          variant={variant}
+          onViewChange={setView}
+          onVariantChange={setVariant}
+          onSortToggle={toggleSortDirection}
         />
       </div>
 
       <div className={cn(getLayoutClasses(), className)}>
-        {sortedItems.map((item) => (
+        {filteredItems.map((item) => (
           <React.Fragment key={item.id}>
             {getCardComponent(item)}
           </React.Fragment>
