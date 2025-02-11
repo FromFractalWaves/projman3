@@ -1,132 +1,178 @@
-A modern, feature-rich project management dashboard built with Next.js, React, and TypeScript. Manage projects, objectives, tasks, and time entries with an intuitive user interface.
+# ProjMan3 Web UI
+
+A modern, enterprise-grade project management dashboard built with Next.js, React, and TypeScript. Features a dark-themed UI with comprehensive project, task, and time management capabilities.
 
 ## Features
 
-- **Project Management**: Create and track projects with detailed information including status, timelines, and estimated hours
-- **Objectives Tracking**: Break down projects into manageable objectives
-- **Task Management**: Create, assign, and track tasks with priorities and status updates
-- **Time Tracking**: Log and monitor time spent on tasks
-- **Todo Lists**: Organize tasks into customizable todo lists
-- **Timeline View**: Visualize project progress and activity in a chronological timeline
-- **Quick Add Functionality**: Rapidly add new projects, objectives, tasks, and time entries
-- **Built-in Notepad**: Take notes and save them locally
+### Project Management
+- Create and manage projects with detailed metadata
+- Track project status, timelines, and estimated hours
+- Monitor project progress and resource allocation
+- Integrated timeline view for project milestones
+
+### Task & Objective Management
+- Break down projects into strategic objectives
+- Create and assign tasks with priorities and deadlines
+- Track task completion and progress
+- Support for multiple task views (grid/list)
+- Priority levels (low/medium/high) with visual indicators
+- Task status workflow (todo → in-progress → done)
+
+### Time Tracking
+- Built-in time entry system for tasks
+- Track time spent on specific tasks
+- Generate time reports and summaries
+- Automatic duration calculations
+
+### Todo Lists
+- Create and manage todo lists
+- Assign tasks to todo lists
+- Different list types (daily/weekly/monthly)
+- Track completion status
+
+### Advanced UI Features
+- Dark theme optimized interface
+- Grid and list view options for all entities
+- Compact and detailed card variants
+- Quick-add functionality for rapid data entry
+- Responsive design for all screen sizes
+- Interactive timeline visualization
+- Real-time status indicators
+- Card-based interface with sort/filter capabilities
 
 ## Tech Stack
 
+### Frontend
 - **Framework**: Next.js 14 with App Router
 - **Language**: TypeScript
+- **State Management**: Zustand with persist middleware
 - **UI Components**: 
-  - Custom components built with Tailwind CSS
-  - shadcn/ui components
+  - Custom components with shadcn/ui
+  - Tailwind CSS for styling
   - Lucide React icons
-- **State Management**: React Hooks
-- **Database**: Prisma with your preferred database
-- **Styling**: Tailwind CSS with custom theme
+  - Recharts for data visualization
+
+### Backend & Data
+- **API**: Built-in Next.js API routes
+- **Database**: Prisma ORM
+- **Data Validation**: Built-in validation layer
+- **File Handling**: Custom file system handlers
+
+### Development Tools
+- ESLint for code quality
+- TypeScript for type safety
+- Prettier for code formatting
+
+## Project Structure
+
+```
+projman3-webui/
+├── src/
+│   ├── app/             # Next.js app router & API routes
+│   ├── components/      # React components
+│   │   ├── cards/       # Card components
+│   │   ├── dashboard/   # Dashboard components
+│   │   ├── dialogs/     # Dialog components
+│   │   ├── forms/       # Form components
+│   │   └── ui/          # Base UI components
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utility functions & API clients
+│   ├── store/           # Zustand store & slices
+│   └── types/           # TypeScript types
+├── prisma/              # Database schema & migrations
+└── public/              # Static assets
+```
+
+## Core Components
+
+### UI Components
+- **BaseCard**: Reusable card component with variants
+- **DashboardLayout**: Main dashboard interface
+- **FormDialog**: Reusable form dialog system 
+- **Timeline**: Activity timeline visualization
+- **CardViewControls**: Grid/list view toggle controls
+
+### Forms & Dialogs
+- **QuickAdd**: Rapid data entry dialogs
+- **FormField**: Reusable form field components
+- **Validation**: Built-in form validation
+
+### Data Management
+- **Store Slices**: Modular state management
+- **API Clients**: Type-safe API integration
+- **Hooks**: Custom hooks for data operations
 
 ## Getting Started
 
 ### Prerequisites
-
 - Node.js 18.17 or later
-- npm or yarn
-- Database (PostgreSQL recommended)
+- PostgreSQL database
+- npm or pnpm
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/project-name.git
-cd project-name
+git clone https://github.com/yourusername/projman3-webui.git
+cd projman3-webui
 ```
 
 2. Install dependencies:
 ```bash
-npm install
-# or
-yarn install
+pnpm install
 ```
 
-3. Set up your environment variables:
+3. Configure environment:
 ```bash
 cp .env.example .env.local
 ```
-Edit `.env.local` with your database and other configuration details.
+Edit `.env.local` with your database credentials.
 
-4. Set up the database:
+4. Initialize database:
 ```bash
-npx prisma generate
-npx prisma db push
+pnpm prisma generate
+pnpm prisma db push
 ```
 
-5. Run the development server:
+5. Start development server:
 ```bash
-npm run dev
-# or
-yarn dev
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+Visit `http://localhost:3000` to see the application.
 
-## Project Structure
+## Development
 
-```
-src/
-├── app/               # Next.js app router pages
-├── components/        # React components
-│   ├── dashboard/     # Dashboard-specific components
-│   ├── dialogs/      # Dialog components
-│   ├── forms/        # Form components
-│   └── ui/           # Generic UI components
-├── hooks/            # Custom React hooks
-├── lib/              # Utility functions and API clients
-├── types/            # TypeScript type definitions
-└── constants/        # Constants and configuration
-```
+### Code Style
+- Follow TypeScript best practices
+- Use functional components
+- Implement proper error handling
+- Write clean, documented code
 
-## API Routes
+### Component Guidelines
+- Use TypeScript interfaces
+- Implement proper prop validation
+- Follow the component hierarchy
+- Maintain single responsibility
 
-The application includes RESTful API routes for:
-- Projects
-- Objectives
-- Tasks
-- Time Entries
-- Todo Lists
+### State Management
+- Use Zustand for global state
+- Implement proper selectors
+- Handle loading and error states
+- Use local state when appropriate
 
-All API routes are located in `src/app/api/`.
+## License
 
-## Key Components
-
-- **DashboardLayout**: Main dashboard interface with statistics and overview
-- **QuickAdd Dialogs**: Modular dialog system for rapid data entry
-- **FormDialog**: Reusable form dialog component
-- **Timeline**: Activity timeline visualization
-- **Notepad**: Built-in note-taking functionality
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## License
+## Support
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-
-## Acknowledgments
-
-- [shadcn/ui](https://ui.shadcn.com/) for the component library
-- [Lucide](https://lucide.dev/) for the icon set
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [Next.js](https://nextjs.org/) for the framework
-
-## Screenshots
-
-[Add screenshots of your application here]
-
-## Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
-
-Project Link: [https://github.com/yourusername/project-name](https://github.com/yourusername/project-name)
+For support, email support@example.com or open an issue in the repository.
