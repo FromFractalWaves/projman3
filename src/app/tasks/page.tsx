@@ -2,36 +2,35 @@
 'use client';
 
 import React from 'react';
-import { useTasks, useProjects, useObjectives } from '@/store/hooks';
-import { TaskForm } from '@/components/forms'; // Adjust this import if needed
-import TaskManagementButtons from '@/components/tasks/TaskManagementButtons';
+import { CardList } from '@/components/cards';
+import { useTasks } from '@/hooks/useTasks';
 
 export default function TasksPage() {
-  const { tasks, loading } = useTasks();
-  const { projects } = useProjects();
-  const { objectives } = useObjectives();
+  const { tasks, loading, error } = useTasks();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <div>Loading tasks...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading tasks: {error.message}</div>;
+  }
 
   return (
-    <div className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold mb-6">Tasks</h1>
-      
-      {/* Render the new buttons */}
-      <TaskManagementButtons />
+    <div className="p-6 space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold text-zinc-100">Tasks</h1>
+        <p className="text-zinc-400">Manage and track your tasks</p>
+      </header>
 
-      {/* Task creation form */}
-      <TaskForm onSubmit={() => {}} projects={projects} objectives={objectives} />
-
-      {/* List of tasks */}
-      <div className="mt-6 space-y-4">
-        {tasks.map(task => (
-          <div key={task.id} className="p-4 bg-gray-800 rounded-lg">
-            <h3 className="text-xl font-semibold">{task.content}</h3>
-            <p className="text-gray-400">{task.description}</p>
-          </div>
-        ))}
-      </div>
+      <CardList
+        type="task"
+        items={tasks}
+        onItemClick={(task) => {
+          // Handle task click if needed
+          console.log('Task clicked:', task);
+        }}
+      />
     </div>
   );
 }
