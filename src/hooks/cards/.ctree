@@ -1,0 +1,704 @@
+cards/
+├── index.ts
+│       import * from './useCard';
+│       import * from './useProjectCard';
+├── useCard.ts
+│       // src/hooks/cards/useCard.ts
+│       import { useCallback, useState } from 'react';
+│       import { useRouter } from 'next/navigation';
+│       import type { BaseEntity, EntityType } from '@/types/base';
+│       import { 
+│         projectsApi, 
+│         objectivesApi, 
+│         tasksApi, 
+│         todoListsApi 
+│       } from '@/lib/api';
+│       
+│       interface UseCardOptions {
+│         type: EntityType;
+│         id: string;
+│       }
+│       
+│       interface UseCardReturn {
+│         loading: boolean;
+│         error: Error | null;
+│         handleEdit: () => void;
+│         handleDelete: () => Promise<void>;
+│         handleRefresh: () => Promise<void>;
+│       }
+│       
+│       /**
+│        * Base hook for common card functionality
+│        */
+│       export function useCard({ type, id }: UseCardOptions): UseCardReturn {
+│         const router = useRouter();
+│         const [loading, setLoading] = useState(false);
+│         const [error, setError] = useState<Error | null>(null);
+│       
+│         // Get the appropriate API based on entity type
+│         const getApi = useCallback(() => {
+│           switch (type) {
+│             case 'project':
+│               return projectsApi;
+│             case 'objective':
+│               return objectivesApi;
+│             case 'task':
+│               return tasksApi;
+│             case 'todoList':
+│               return todoListsApi;
+│             default:
+│               throw new Error(`Unknown entity type: ${type}`);
+│           }
+│         }, [type]);
+│       
+│         // Handle card editing
+│         const handleEdit = useCallback(() => {
+│           router.push(`/${type}s/${id}/edit`);
+│         }, [type, id, router]);
+│       
+│         // Handle card deletion
+│         const handleDelete = useCallback(async () => {
+│           if (!window.confirm('Are you sure you want to delete this item?')) {
+│             return;
+│           }
+│       
+│           setLoading(true);
+│           setError(null);
+│       
+│           try {
+│             const api = getApi();
+│             await api.delete(id);
+│             router.refresh();
+│           } catch (err) {
+│             setError(err instanceof Error ? err : new Error('An error occurred'));
+│             throw err;
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, [type, id, getApi, router]);
+│       
+│         // Handle card refresh
+│         const handleRefresh = useCallback(async () => {
+│           setLoading(true);
+│           setError(null);
+│       
+│           try {
+│             const api = getApi();
+│             await api.refresh();
+│             router.refresh();
+│           } catch (err) {
+│             setError(err instanceof Error ? err : new Error('An error occurred'));
+│             throw err;
+│           } finally {
+│             setLoading(false);
+│           }
+│         }, [getApi, router]);
+│       
+│         return {
+│           loading,
+│           error,
+│           handleEdit,
+│           handleDelete,
+│           handleRefresh
+│         };
+│       }
+├── useObjectiveCard.ts
+│       // src/hooks/cards/useObjectiveCard.ts
+│       import { useCallback, useMemo } from 'react';
+│       import { useRouter } from 'next/navigation';
+│       import { useCard } from './useCard';
+│       import { useObjectives } from '@/hooks/useObjectives';
+│       import type { Objective } from '@/types';
+│       import { getDaysRemaining } from '@/lib/utils/cards/cardFormatters';
+│       
+│       interface ObjectiveStats {
+│         totalTasks: number;
+│         completedTasks: number;
+│         inProgressTasks: number;
+│         timeSpent: number;
+│         estimatedTime: number;
+│         progress: number;
+│         daysRemaining: number;
+│         isOverdue: boolean;
+│       }
+│       
+│       export function useObjectiveCard(objective: Objective) {
+│         const router = useRouter();
+│         const { updateObjective } = useObjectives();
+│         const { loading, error, handleEdit, handleDelete } = useCard({
+│           type: 'objective',
+│           id: objective.id
+│         });
+│       
+│         // Calculate objective statistics
+│         const stats: ObjectiveStats = useMemo(() => {
+│           const tasks = objective.tasks || [];
+│           const completedTasks = tasks.filter(t => t.status === 'done');
+│           const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
+│           const timeSpent = tasks.reduce((total, task) => total + (task.actualHours || 0), 0);
+│           const estimatedTime = tasks.reduce((total, task) => total + (task.estimatedHours || 0), 0);
+│           const progress = tasks.length > 0 
+│             ? (completedTasks.length / tasks.length) * 100 
+│             : 0;
+│       
+│           return {
+│             totalTasks: tasks.length,
+│             completedTasks: completedTasks.length,
+│             inProgressTasks: inProgressTasks.length,
+│             timeSpent,
+│             estimatedTime,
+│             progress,
+│             daysRemaining: objective.dueDate ? getDaysRemaining(objective.dueDate) : 0,
+│             isOverdue: objective.dueDate ? new Date(objective.dueDate) < new Date() : false
+│           };
+│         }, [objective]);
+│       
+│         // Handle viewing objective tasks
+│         const handleViewTasks = useCallback(() => {
+│           router.push(`/objectives/${objective.id}/tasks`);
+│         }, [router, objective.id]);
+│       
+│         // Handle adding a new task
+│         const handleAddTask = useCallback(() => {
+│           router.push(`/tasks/new?objectiveId=${objective.id}`);
+│         }, [router, objective.id]);
+│       
+│         // Handle marking objective as complete
+│         const handleMarkComplete = useCallback(async () => {
+│           try {
+│             await updateObjective(objective.id, {
+│               status: 'completed',
+│               completedAt: new Date().toISOString()
+│             });
+│             router.refresh();
+│           } catch (error) {
+│             console.error('Error completing objective:', error);
+│           }
+│         }, [updateObjective, objective.id, router]);
+│       
+│         // Handle duplicating objective
+│         const handleDuplicate = useCallback(async () => {
+│           try {
+│             const duplicatedObjective = await updateObjective('new', {
+│               ...objective,
+│               id: undefined,
+│               name: `${objective.name} (Copy)`,
+│               status: 'not-started',
+│               tasks: [] // Don't copy tasks to the new objective
+│             });
+│             router.push(`/objectives/${duplicatedObjective.id}`);
+│           } catch (error) {
+│             console.error('Error duplicating objective:', error);
+│           }
+│         }, [updateObjective, objective, router]);
+│       
+│         // Handle exporting objective data
+│         const handleExport = useCallback(() => {
+│           try {
+│             const data = {
+│               name: objective.name,
+│               description: objective.description,
+│               status: objective.status,
+│               startDate: objective.startDate,
+│               dueDate: objective.dueDate,
+│               estimatedHours: objective.estimatedHours,
+│               tasks: objective.tasks?.map(task => ({
+│                 content: task.content,
+│                 description: task.description,
+│                 status: task.status,
+│                 priority: task.priority,
+│                 estimatedHours: task.estimatedHours,
+│                 actualHours: task.actualHours
+│               })),
+│               stats
+│             };
+│       
+│             const blob = new Blob([JSON.stringify(data, null, 2)], {
+│               type: 'application/json'
+│             });
+│             const url = URL.createObjectURL(blob);
+│             const a = document.createElement('a');
+│             a.href = url;
+│             a.download = `objective-${objective.name.toLowerCase().replace(/\s+/g, '-')}.json`;
+│             document.body.appendChild(a);
+│             a.click();
+│             document.body.removeChild(a);
+│             URL.revokeObjectURL(url);
+│           } catch (error) {
+│             console.error('Error exporting objective:', error);
+│           }
+│         }, [objective, stats]);
+│       
+│         return {
+│           stats,
+│           loading,
+│           error,
+│           handleEdit,
+│           handleDelete,
+│           handleViewTasks,
+│           handleAddTask,
+│           handleMarkComplete,
+│           handleDuplicate,
+│           handleExport
+│         };
+│       }
+├── useProjectCard.ts
+│       // src/hooks/cards/useProjectCard.ts
+│       import { useCallback, useMemo } from 'react';
+│       import { useRouter } from 'next/navigation';
+│       import { useCard } from './useCard';
+│       import { useProjects } from '@/hooks/useProjects';
+│       import type { Project } from '@/types';
+│       import { isOverdue, getDaysRemaining } from '@/lib/utils/cards/cardFormatters';
+│       
+│       interface ProjectStats {
+│         totalTasks: number;
+│         completedTasks: number;
+│         totalObjectives: number;
+│         completedObjectives: number;
+│         timeSpent: number;
+│         daysRemaining: number;
+│         isOverdue: boolean;
+│       }
+│       
+│       export function useProjectCard(project: Project) {
+│         const router = useRouter();
+│         const { updateProject } = useProjects();
+│         const { loading, error, handleEdit, handleDelete, handleRefresh } = useCard({
+│           type: 'project',
+│           id: project.id
+│         });
+│       
+│         // Calculate project statistics
+│         const stats: ProjectStats = useMemo(() => ({
+│           totalTasks: project.tasks?.length || 0,
+│           completedTasks: project.tasks?.filter(t => t.status === 'done').length || 0,
+│           totalObjectives: project.objectives?.length || 0,
+│           completedObjectives: project.objectives?.filter(o => o.status === 'completed').length || 0,
+│           timeSpent: project.tasks?.reduce((total, task) => {
+│             return total + (task.actualHours || 0);
+│           }, 0) || 0,
+│           daysRemaining: project.dueDate ? getDaysRemaining(project.dueDate) : 0,
+│           isOverdue: project.dueDate ? isOverdue(project.dueDate) : false
+│         }), [project]);
+│       
+│         // Handle viewing timeline
+│         const handleViewTimeline = useCallback(() => {
+│           router.push(`/projects/${project.id}/timeline`);
+│         }, [router, project.id]);
+│       
+│         // Handle viewing objectives
+│         const handleViewObjectives = useCallback(() => {
+│           router.push(`/projects/${project.id}/objectives`);
+│         }, [router, project.id]);
+│       
+│         // Handle viewing tasks
+│         const handleViewTasks = useCallback(() => {
+│           router.push(`/projects/${project.id}/tasks`);
+│         }, [router, project.id]);
+│       
+│         // Handle archiving project
+│         const handleArchive = useCallback(async () => {
+│           try {
+│             await updateProject(project.id, { status: 'archived' });
+│             router.refresh();
+│           } catch (error) {
+│             console.error('Error archiving project:', error);
+│           }
+│         }, [updateProject, project.id, router]);
+│       
+│         return {
+│           stats,
+│           loading,
+│           error,
+│           handleEdit,
+│           handleDelete,
+│           handleRefresh,
+│           handleViewTimeline,
+│           handleViewObjectives,
+│           handleViewTasks,
+│           handleArchive
+│         };
+│       }
+├── useTaskCards.ts
+│       // src/hooks/cards/useTaskCard.ts
+│       import { useState, useCallback, useEffect } from 'react';
+│       import { useRouter } from 'next/navigation';
+│       import { useCard } from './useCard';
+│       import { useTasks } from '@/hooks/useTasks';
+│       import { useTimeEntries } from '@/hooks/useTimeEntries';
+│       import type { Task } from '@/types';
+│       import { formatDuration } from '@/lib/utils/cards/cardFormatters';
+│       
+│       interface TaskStats {
+│         timeSpent: number;
+│         percentComplete: number;
+│         isOverdue: boolean;
+│         currentTimeEntryId: string | null;
+│       }
+│       
+│       export function useTaskCard(task: Task) {
+│         const router = useRouter();
+│         const { updateTask } = useTasks();
+│         const { createTimeEntry, updateTimeEntry } = useTimeEntries();
+│         const { loading, error, handleEdit, handleDelete } = useCard({
+│           type: 'task',
+│           id: task.id
+│         });
+│       
+│         // Local state for time tracking
+│         const [isTimerRunning, setIsTimerRunning] = useState(false);
+│         const [currentTimeEntryId, setCurrentTimeEntryId] = useState<string | null>(null);
+│       
+│         // Calculate task statistics
+│         const stats: TaskStats = {
+│           timeSpent: task.timeEntries?.reduce((total, entry) => {
+│             return total + (entry.duration || 0);
+│           }, 0) || 0,
+│           percentComplete: task.estimatedHours && task.actualHours 
+│             ? Math.min((task.actualHours / task.estimatedHours) * 100, 100)
+│             : 0,
+│           isOverdue: task.dueDate ? new Date(task.dueDate) < new Date() : false,
+│           currentTimeEntryId
+│         };
+│       
+│         // Check for any ongoing time entry on mount
+│         useEffect(() => {
+│           const ongoingEntry = task.timeEntries?.find(entry => !entry.endTime);
+│           if (ongoingEntry) {
+│             setIsTimerRunning(true);
+│             setCurrentTimeEntryId(ongoingEntry.id);
+│           }
+│         }, [task]);
+│       
+│         // Handle marking task as complete
+│         const handleComplete = useCallback(async () => {
+│           try {
+│             // Stop any running timer first
+│             if (isTimerRunning) {
+│               await handleStopTimer();
+│             }
+│       
+│             await updateTask(task.id, { 
+│               status: 'done',
+│               completedAt: new Date().toISOString()
+│             });
+│             router.refresh();
+│           } catch (error) {
+│             console.error('Error completing task:', error);
+│           }
+│         }, [updateTask, task.id, router, isTimerRunning]);
+│       
+│         // Handle starting the timer
+│         const handleStartTimer = useCallback(async () => {
+│           try {
+│             // Don't start a new timer if one is already running
+│             if (isTimerRunning) return;
+│       
+│             const entry = await createTimeEntry({
+│               taskId: task.id,
+│               startTime: new Date().toISOString(),
+│               description: `Timer started for: ${task.content}`
+│             });
+│       
+│             setIsTimerRunning(true);
+│             setCurrentTimeEntryId(entry.id);
+│       
+│             // Update task status to in-progress if it's not already
+│             if (task.status === 'todo') {
+│               await updateTask(task.id, { status: 'in-progress' });
+│             }
+│       
+│             router.refresh();
+│           } catch (error) {
+│             console.error('Error starting timer:', error);
+│             setIsTimerRunning(false);
+│             setCurrentTimeEntryId(null);
+│           }
+│         }, [createTimeEntry, task, isTimerRunning, updateTask, router]);
+│       
+│         // Handle stopping the timer
+│         const handleStopTimer = useCallback(async () => {
+│           if (!currentTimeEntryId || !isTimerRunning) return;
+│       
+│           try {
+│             const endTime = new Date();
+│             const entry = await updateTimeEntry(currentTimeEntryId, {
+│               endTime: endTime.toISOString()
+│             });
+│       
+│             // Update task's actual hours
+│             if (entry.duration) {
+│               const additionalHours = entry.duration / 60; // Convert minutes to hours
+│               await updateTask(task.id, {
+│                 actualHours: (task.actualHours || 0) + additionalHours
+│               });
+│             }
+│       
+│             setIsTimerRunning(false);
+│             setCurrentTimeEntryId(null);
+│             router.refresh();
+│           } catch (error) {
+│             console.error('Error stopping timer:', error);
+│           }
+│         }, [currentTimeEntryId, isTimerRunning, updateTimeEntry, updateTask, task, router]);
+│       
+│         // Handle pausing the timer
+│         const handlePauseTimer = useCallback(async () => {
+│           await handleStopTimer();
+│         }, [handleStopTimer]);
+│       
+│         // Handle resuming the timer
+│         const handleResumeTimer = useCallback(async () => {
+│           await handleStartTimer();
+│         }, [handleStartTimer]);
+│       
+│         // Handle moving to a todo list
+│         const handleMoveToTodoList = useCallback((todoListId: string) => {
+│           router.push(`/todo/${todoListId}/tasks/add?taskId=${task.id}`);
+│         }, [router, task.id]);
+│       
+│         // Handle changing priority
+│         const handleChangePriority = useCallback(async (priority: 'low' | 'medium' | 'high') => {
+│           try {
+│             await updateTask(task.id, { priority });
+│             router.refresh();
+│           } catch (error) {
+│             console.error('Error updating priority:', error);
+│           }
+│         }, [updateTask, task.id, router]);
+│       
+│         // Handle duplicating task
+│         const handleDuplicate = useCallback(async () => {
+│           try {
+│             const duplicatedTask = await updateTask('new', {
+│               ...task,
+│               id: undefined,
+│               content: `${task.content} (Copy)`,
+│               status: 'todo',
+│               actualHours: 0,
+│               timeEntries: []
+│             });
+│             router.push(`/tasks/${duplicatedTask.id}`);
+│           } catch (error) {
+│             console.error('Error duplicating task:', error);
+│           }
+│         }, [updateTask, task, router]);
+│       
+│         return {
+│           stats,
+│           loading,
+│           error,
+│           isTimerRunning,
+│           handleEdit,
+│           handleDelete,
+│           handleComplete,
+│           handleStartTimer,
+│           handleStopTimer,
+│           handlePauseTimer,
+│           handleResumeTimer,
+│           handleMoveToTodoList,
+│           handleChangePriority,
+│           handleDuplicate
+│         };
+│       }
+└── useTodoListCard.ts
+        // src/hooks/cards/useTodoListCard.ts
+        import { useCallback, useMemo } from 'react';
+        import { useRouter } from 'next/navigation';
+        import { useCard } from './useCard';
+        import { useTodoLists } from '@/hooks/useTodoLists';
+        import type { TodoList } from '@/types';
+        import { formatDuration } from '@/lib/utils/cards/cardFormatters';
+        
+        interface TodoListStats {
+          totalTasks: number;
+          completedTasks: number;
+          inProgressTasks: number;
+          progress: number;
+          estimatedTime: number;
+          actualTime: number;
+          highPriorityTasks: number;
+          overdueTasks: number;
+        }
+        
+        export function useTodoListCard(todoList: TodoList) {
+          const router = useRouter();
+          const { updateTodoList } = useTodoLists();
+          const { loading, error, handleEdit, handleDelete } = useCard({
+            type: 'todoList',
+            id: todoList.id
+          });
+        
+          // Calculate todo list statistics
+          const stats: TodoListStats = useMemo(() => {
+            const tasks = todoList.tasks || [];
+            const completedTasks = tasks.filter(t => t.status === 'done');
+            const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
+            const highPriorityTasks = tasks.filter(t => t.priority === 'high');
+            const overdueTasks = tasks.filter(t => {
+              return t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done';
+            });
+        
+            const estimatedTime = tasks.reduce((total, task) => total + (task.estimatedHours || 0), 0);
+            const actualTime = tasks.reduce((total, task) => total + (task.actualHours || 0), 0);
+            const progress = tasks.length > 0 
+              ? (completedTasks.length / tasks.length) * 100 
+              : 0;
+        
+            return {
+              totalTasks: tasks.length,
+              completedTasks: completedTasks.length,
+              inProgressTasks: inProgressTasks.length,
+              progress,
+              estimatedTime,
+              actualTime,
+              highPriorityTasks: highPriorityTasks.length,
+              overdueTasks: overdueTasks.length
+            };
+          }, [todoList]);
+        
+          // Handle archiving todo list
+          const handleArchive = useCallback(async () => {
+            try {
+              await updateTodoList(todoList.id, { type: 'archived' });
+              router.refresh();
+            } catch (error) {
+              console.error('Error archiving todo list:', error);
+            }
+          }, [updateTodoList, todoList.id, router]);
+        
+          // Handle adding a new task
+          const handleAddTask = useCallback(() => {
+            router.push(`/todo/${todoList.id}/tasks/new`);
+          }, [router, todoList.id]);
+        
+          // Handle duplicating todo list
+          const handleDuplicate = useCallback(async () => {
+            try {
+              const duplicatedList = await updateTodoList('new', {
+                ...todoList,
+                id: undefined,
+                name: `${todoList.name} (Copy)`,
+                tasks: todoList.tasks?.map(task => ({
+                  ...task,
+                  id: undefined,
+                  status: 'todo',
+                  actualHours: 0
+                }))
+              });
+              router.push(`/todo/${duplicatedList.id}`);
+            } catch (error) {
+              console.error('Error duplicating todo list:', error);
+            }
+          }, [updateTodoList, todoList, router]);
+        
+          // Handle exporting todo list
+          const handleExport = useCallback(() => {
+            try {
+              const data = {
+                name: todoList.name,
+                type: todoList.type,
+                tasks: todoList.tasks?.map(task => ({
+                  content: task.content,
+                  description: task.description,
+                  status: task.status,
+                  priority: task.priority,
+                  startDate: task.startDate,
+                  dueDate: task.dueDate,
+                  estimatedHours: task.estimatedHours,
+                  actualHours: task.actualHours
+                })),
+                stats
+              };
+        
+              // Export as JSON file
+              const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json'
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `todo-list-${todoList.name.toLowerCase().replace(/\s+/g, '-')}.json`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            } catch (error) {
+              console.error('Error exporting todo list:', error);
+            }
+          }, [todoList, stats]);
+        
+          // Handle sorting tasks
+          const handleSort = useCallback(async (sortBy: 'priority' | 'dueDate' | 'status') => {
+            try {
+              const sortedTasks = [...(todoList.tasks || [])].sort((a, b) => {
+                switch (sortBy) {
+                  case 'priority': {
+                    const priorityOrder = { high: 0, medium: 1, low: 2 };
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                  }
+                  case 'dueDate': {
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                  }
+                  case 'status': {
+                    const statusOrder = { 'in-progress': 0, 'todo': 1, 'done': 2 };
+                    return statusOrder[a.status] - statusOrder[b.status];
+                  }
+                  default:
+                    return 0;
+                }
+              });
+        
+              await updateTodoList(todoList.id, {
+                tasks: sortedTasks
+              });
+              router.refresh();
+            } catch (error) {
+              console.error('Error sorting tasks:', error);
+            }
+          }, [updateTodoList, todoList, router]);
+        
+          // Handle filtering tasks
+          const handleFilter = useCallback(async (filter: 'all' | 'active' | 'completed' | 'high-priority' | 'overdue') => {
+            try {
+              const filteredTasks = (todoList.tasks || []).filter(task => {
+                switch (filter) {
+                  case 'active':
+                    return task.status !== 'done';
+                  case 'completed':
+                    return task.status === 'done';
+                  case 'high-priority':
+                    return task.priority === 'high';
+                  case 'overdue':
+                    return task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+                  default:
+                    return true;
+                }
+              });
+        
+              await updateTodoList(todoList.id, {
+                tasks: filteredTasks
+              });
+              router.refresh();
+            } catch (error) {
+              console.error('Error filtering tasks:', error);
+            }
+          }, [updateTodoList, todoList, router]);
+        
+          return {
+            stats,
+            loading,
+            error,
+            handleEdit,
+            handleDelete,
+            handleArchive,
+            handleAddTask,
+            handleDuplicate,
+            handleExport,
+            handleSort,
+            handleFilter
+          };
+        }
