@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Folder, BarChart2, Target, CheckSquare, Calendar, Clock } from 'lucide-react';
-import { BaseCard } from '../BaseCard';
+import { BaseCard } from './BaseCard';
 import type { Project } from '@/types';
 import { cn } from '@/lib/utils';
 import { useProjectCard } from '@/hooks/cards/useProjectCard';

@@ -1,0 +1,983 @@
+types/
+├── base.ts
+│       // src/types/base.ts
+│       
+│       export interface Filterable {
+│         status?: string;
+│         priority?: string;
+│         createdAt?: Date;
+│         name?: string;
+│       }
+│       
+│       export interface BaseEntity extends Filterable {
+│         id: string;
+│         createdAt: Date;
+│         updatedAt: Date;
+│       }
+│       
+│       export type Status = 'not-started' | 'active' | 'in-progress' | 'completed' | 'on-hold' | 'cancelled';
+│       export type Priority = 'low' | 'medium' | 'high';
+│       export type EntityType = 'project' | 'task' | 'objective' | 'todoList';
+│       
+│       export interface BaseCardProps {
+│         type: EntityType;
+│         title: string;
+│         description?: string;
+│         status?: string;
+│         startDate?: string;
+│         dueDate?: string;
+│         estimatedHours?: number;
+│         priority?: Priority;
+│         variant?: 'default' | 'compact' | 'detailed';
+│         onEdit?: () => void;
+│         onDelete?: () => void;
+│         onClick?: () => void;
+│         className?: string;
+│       }
+├── cards/
+│   ├── cardActions.ts
+│   │       // src/types/cards/cardActions.ts
+│   │       import { ReactNode } from 'react';
+│   │       import { Project, Task, Objective, TodoList } from '@/types';
+│   │       
+│   │       // Base action type that all card actions extend
+│   │       export interface BaseCardAction {
+│   │         label: string;
+│   │         icon?: ReactNode;
+│   │         onClick: () => Promise<void> | void;
+│   │         variant?: 'default' | 'primary' | 'secondary' | 'destructive' | 'ghost' | 'outline';
+│   │         disabled?: boolean;
+│   │         tooltip?: string;
+│   │         className?: string;
+│   │         size?: 'sm' | 'default' | 'lg';
+│   │       }
+│   │       
+│   │       // Generic card entity type
+│   │       export type CardEntity = Project | Task | Objective | TodoList;
+│   │       
+│   │       // Common actions shared across different card types
+│   │       export interface CommonCardActions {
+│   │         edit?: BaseCardAction;
+│   │         delete?: BaseCardAction;
+│   │         view?: BaseCardAction;
+│   │       }
+│   │       
+│   │       // Project-specific card actions
+│   │       export interface ProjectCardActions extends CommonCardActions {
+│   │         viewTimeline?: BaseCardAction;
+│   │         viewObjectives?: BaseCardAction;
+│   │         viewTasks?: BaseCardAction;
+│   │         archive?: BaseCardAction;
+│   │         duplicate?: BaseCardAction;
+│   │       }
+│   │       
+│   │       // Objective-specific card actions
+│   │       export interface ObjectiveCardActions extends CommonCardActions {
+│   │         viewProgress?: BaseCardAction;
+│   │         viewTasks?: BaseCardAction;
+│   │         markComplete?: BaseCardAction;
+│   │         addTask?: BaseCardAction;
+│   │       }
+│   │       
+│   │       // Task-specific card actions
+│   │       export interface TaskCardActions extends CommonCardActions {
+│   │         markComplete?: BaseCardAction;
+│   │         startTimer?: BaseCardAction;
+│   │         stopTimer?: BaseCardAction;
+│   │         addToTodoList?: BaseCardAction;
+│   │         moveToProject?: BaseCardAction;
+│   │         duplicate?: BaseCardAction;
+│   │       }
+│   │       
+│   │       // TodoList-specific card actions
+│   │       export interface TodoListCardActions extends CommonCardActions {
+│   │         archive?: BaseCardAction;
+│   │         addTask?: BaseCardAction;
+│   │         duplicate?: BaseCardAction;
+│   │         export?: BaseCardAction;
+│   │       }
+│   │       
+│   │       // Type guard to check if an action is a base card action
+│   │       export function isBaseCardAction(action: unknown): action is BaseCardAction {
+│   │         return (
+│   │           typeof action === 'object' &&
+│   │           action !== null &&
+│   │           'label' in action &&
+│   │           'onClick' in action &&
+│   │           typeof (action as BaseCardAction).label === 'string' &&
+│   │           typeof (action as BaseCardAction).onClick === 'function'
+│   │         );
+│   │       }
+│   │       
+│   │       // Helper type to get actions type based on entity type
+│   │       export type CardActionsForEntity<T extends CardEntity> = T extends Project
+│   │         ? ProjectCardActions
+│   │         : T extends Objective
+│   │         ? ObjectiveCardActions
+│   │         : T extends Task
+│   │         ? TaskCardActions
+│   │         : T extends TodoList
+│   │         ? TodoListCardActions
+│   │         : never;
+│   │       
+│   │       // Helper type for action groups (used in layout)
+│   │       export interface CardActionGroup {
+│   │         primary?: BaseCardAction[];
+│   │         secondary?: BaseCardAction[];
+│   │         menu?: BaseCardAction[];
+│   │       }
+│   │       
+│   │       // Configuration for action button appearances
+│   │       export interface CardActionConfig {
+│   │         showLabels?: boolean;
+│   │         showIcons?: boolean;
+│   │         grouping?: 'none' | 'primary' | 'menu';
+│   │         layout?: 'row' | 'column';
+│   │         size?: 'sm' | 'default' | 'lg';
+│   │         className?: string;
+│   │       }
+│   ├── cardCommon.ts
+│   │       
+│   │       // src/types/cards/cardCommon.ts
+│   │       import { Status, Priority } from '@/types/base';
+│   │       
+│   │       export interface CardStats {
+│   │         completedTasks: number;
+│   │         totalTasks: number;
+│   │         timeSpent: number;
+│   │         estimatedTime: number;
+│   │         progress: number;
+│   │         daysRemaining: number;
+│   │         isOverdue: boolean;
+│   │       }
+│   │       
+│   │       export interface CardMeta {
+│   │         status?: Status;
+│   │         priority?: Priority;
+│   │         startDate?: string;
+│   │         dueDate?: string;
+│   │         estimatedHours?: number;
+│   │         actualHours?: number;
+│   │       }
+│   │       
+│   │       export interface CardContent {
+│   │         title: string;
+│   │         description?: string;
+│   │         meta?: CardMeta;
+│   │         stats?: CardStats;
+│   │       }
+│   ├── cardProps.ts
+│   │       
+│   │       // src/types/cards/cardProps.ts
+│   │       import { HTMLAttributes } from 'react';
+│   │       import { CardVariant } from './variants';
+│   │       import { CardContent } from './cardCommon';
+│   │       import { CardActionsForEntity, CardEntity } from './cardActions';
+│   │       
+│   │       // Base props for all card components
+│   │       export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
+│   │         variant?: CardVariant;
+│   │         content: CardContent;
+│   │         actions?: CardActionsForEntity<CardEntity>;
+│   │         onEdit?: () => void;
+│   │         onDelete?: () => void;
+│   │         onClick?: () => void;
+│   │       }
+│   │       
+│   │       // Project card specific props
+│   │       export interface ProjectCardProps extends Omit<BaseCardProps, 'content'> {
+│   │         project: Project;
+│   │       }
+│   │       
+│   │       // Objective card specific props
+│   │       export interface ObjectiveCardProps extends Omit<BaseCardProps, 'content'> {
+│   │         objective: Objective;
+│   │       }
+│   │       
+│   │       // Task card specific props
+│   │       export interface TaskCardProps extends Omit<BaseCardProps, 'content'> {
+│   │         task: Task;
+│   │       }
+│   │       
+│   │       // TodoList card specific props
+│   │       export interface TodoListCardProps extends Omit<BaseCardProps, 'content'> {
+│   │         todoList: TodoList;
+│   │       }
+│   ├── index.ts
+│   │       // src/types/cards/index.ts
+│   │       export * from './cardActions';
+│   │       export * from './cardCommon';
+│   │       export * from './cardProps';
+│   │       export * from './variants';
+│   └── varients.ts
+│           
+│           // src/types/cards/variants.ts
+│           // Card appearance variants
+│           export type CardVariant = 'default' | 'compact' | 'detailed';
+│           
+│           // Card layout variants
+│           export type CardLayoutVariant = 'grid' | 'list' | 'timeline';
+│           
+│           // Card status variants for styling
+│           export type CardStatusVariant = 'default' | 'active' | 'completed' | 'overdue';
+│           
+│           // Card action button variants
+│           export type CardActionVariant = 'default' | 'primary' | 'secondary' | 'destructive' | 'ghost' | 'outline';
+│           
+│           // Card size variants
+│           export type CardSizeVariant = 'sm' | 'default' | 'lg';
+│           
+│           // Combined variant configuration
+│           export interface CardVariants {
+│             variant?: CardVariant;
+│             layout?: CardLayoutVariant;
+│             status?: CardStatusVariant;
+│             size?: CardSizeVariant;
+│           }
+├── dashboard/
+│   ├── dashboard.ts
+│   │       // src/types/dashboard/index.ts
+│   │       
+│   │       // Grid Types
+│   │       export interface DashboardGridProps {
+│   │           children: React.ReactNode;
+│   │           className?: string;
+│   │           fullWidth?: boolean;
+│   │           gap?: 'sm' | 'md' | 'lg';
+│   │           columns?: 1 | 2 | 3 | 4;
+│   │         }
+│   │         
+│   │         export interface DashboardGridItemProps {
+│   │           children: React.ReactNode;
+│   │           className?: string;
+│   │           colSpan?: 1 | 2 | 3;
+│   │         }
+│   │         
+│   │         // Header Types
+│   │         export interface DashboardHeaderStat {
+│   │           label: string;
+│   │           value: string | number;
+│   │         }
+│   │         
+│   │         export interface DashboardHeaderProps {
+│   │           title: string;
+│   │           description?: string;
+│   │           stats?: DashboardHeaderStat[];
+│   │           onRefresh?: () => Promise<void>;
+│   │           className?: string;
+│   │           actions?: React.ReactNode;
+│   │         }
+│   │         
+│   │         // Stats Types
+│   │         export interface StatTrend {
+│   │           value: number;
+│   │           label: string;
+│   │           direction: 'up' | 'down' | 'neutral';
+│   │         }
+│   │         
+│   │         export interface StatProgress {
+│   │           value: number;
+│   │           max: number;
+│   │         }
+│   │         
+│   │         export interface StatCardProps {
+│   │           title: string;
+│   │           value: string | number;
+│   │           icon?: React.ReactNode;
+│   │           trend?: StatTrend;
+│   │           progress?: StatProgress;
+│   │           className?: string;
+│   │         }
+│   │         
+│   │         export interface DashboardStats {
+│   │           totalProjects: number;
+│   │           activeProjects: number;
+│   │           totalTasks: number;
+│   │           completedTasks: number;
+│   │           totalObjectives: number;
+│   │           achievedObjectives: number;
+│   │           overdueTasks: number;
+│   │           projectProgress: number;
+│   │         }
+│   │         
+│   │         export interface DashboardStatsProps {
+│   │           stats: DashboardStats;
+│   │           className?: string;
+│   │         }
+│   ├── index.ts
+│   │       export * from './dashboard';
+│   │       export * from './objectives';
+│   │       export * from './projects';
+│   │       export * from './tasks';
+│   │       export * from './todoLists';
+│   ├── objectives.ts
+│   │       // src/types/dashboard/objectives.ts
+│   │       import { Objective, Project } from '@/types';
+│   │       
+│   │       export interface ObjectiveStats {
+│   │         totalObjectives: number;
+│   │         completedObjectives: number;
+│   │         inProgressObjectives: number;
+│   │         overdue: number;
+│   │         completionRate: number;
+│   │       }
+│   │       
+│   │       export interface DashboardObjectivesProps {
+│   │         objectives: Objective[];
+│   │         projects: Project[];
+│   │         onObjectiveClick?: (objective: Objective) => void;
+│   │         onAddObjective?: () => void;
+│   │         onEditObjective?: (objective: Objective) => void;
+│   │         onDeleteObjective?: (objective: Objective) => void;
+│   │         className?: string;
+│   │       }
+│   │       
+│   │       export interface ObjectiveProgressProps {
+│   │         completed: number;
+│   │         total: number;
+│   │         className?: string;
+│   │       }
+│   ├── projects.ts
+│   │       // src/types/dashboard/projects.ts
+│   │       import { Project, Task, Objective } from '@/types';
+│   │       
+│   │       export interface ProjectStats {
+│   │         totalProjects: number;
+│   │         activeProjects: number;
+│   │         completedProjects: number;
+│   │         overdueProjects: number;
+│   │         projectProgress: number;
+│   │         totalTasks: number;
+│   │         completedTasks: number;
+│   │       }
+│   │       
+│   │       export interface ProjectProgressProps {
+│   │         completed: number;
+│   │         total: number;
+│   │         overdue: number;
+│   │         className?: string;
+│   │       }
+│   │       
+│   │       export interface DashboardProjectsProps {
+│   │         projects: Project[];
+│   │         tasks: Task[];
+│   │         objectives: Objective[];
+│   │         onProjectClick?: (project: Project) => void;
+│   │         onAddProject?: () => void;
+│   │         onEditProject?: (project: Project) => void;
+│   │         onDeleteProject?: (project: Project) => void;
+│   │         className?: string;
+│   │       }
+│   ├── tasks.ts
+│   │       // src/types/dashboard/tasks.ts
+│   │       import { Task, Project, Objective } from '@/types';
+│   │       
+│   │       export interface TaskStats {
+│   │         totalTasks: number;
+│   │         completedTasks: number;
+│   │         inProgressTasks: number;
+│   │         todoTasks: number;
+│   │         overdueTasks: number;
+│   │         highPriorityTasks: number;
+│   │       }
+│   │       
+│   │       export interface DashboardTasksProps {
+│   │         tasks: Task[];
+│   │         projects: Project[];
+│   │         objectives: Objective[];
+│   │         onTaskClick?: (task: Task) => void;
+│   │         onAddTask?: () => void;
+│   │         onEditTask?: (task: Task) => void;
+│   │         onDeleteTask?: (task: Task) => void;
+│   │         onStatusChange?: (task: Task, status: string) => Promise<void>;
+│   │         onPriorityChange?: (task: Task, priority: string) => Promise<void>;
+│   │         className?: string;
+│   │       }
+│   │       
+│   │       export interface TaskFilterState {
+│   │         status?: string;
+│   │         priority?: string;
+│   │         projectId?: string;
+│   │         objectiveId?: string;
+│   │         search?: string;
+│   │       }
+│   │       
+│   │       export interface TaskFilterProps {
+│   │         projects: Project[];
+│   │         objectives: Objective[];
+│   │         filters: TaskFilterState;
+│   │         onFilterChange: (filters: TaskFilterState) => void;
+│   │       }
+│   └── todoLists.ts
+│           // src/types/dashboard/todolists.ts
+│           import { TodoList, Task } from '@/types';
+│           
+│           export interface TodoListStats {
+│             totalLists: number;
+│             activeLists: number;
+│             totalTasks: number;
+│             completedTasks: number;
+│             overdueTasks: number;
+│           }
+│           
+│           export interface DashboardTodoListsProps {
+│             todoLists: TodoList[];
+│             onTodoListClick?: (todoList: TodoList) => void;
+│             onAddTodoList?: () => void;
+│             onEditTodoList?: (todoList: TodoList) => void;
+│             onDeleteTodoList?: (todoList: TodoList) => void;
+│             onAddTask?: (todoList: TodoList) => void;
+│             className?: string;
+│           }
+│           
+│           export interface TodoListProgressProps {
+│             tasks: Task[];
+│             className?: string;
+│           }
+├── dialogs/
+│   ├── baseDialogProps.ts
+│   │       // src/types/dialogs/baseDialogProps.ts
+│   │       import { ReactNode } from 'react';
+│   │       
+│   │       export interface BaseDialogProps {
+│   │         title: string;
+│   │         description?: string;
+│   │         trigger: ReactNode;
+│   │         isOpen?: boolean;
+│   │         onOpenChange?: (open: boolean) => void;
+│   │         children: ReactNode;
+│   │         className?: string;
+│   │       }
+│   ├── confirmDialogProps.ts
+│   │       // src/types/dialogs/confirmDialogProps.ts
+│   │       import { BaseDialogProps } from './baseDialogProps';
+│   │       
+│   │       export interface ConfirmDialogProps extends BaseDialogProps {
+│   │         confirmLabel?: string;
+│   │         cancelLabel?: string;
+│   │         onConfirm: () => Promise<void>;
+│   │         variant?: 'default' | 'destructive';
+│   │       }
+│   ├── formDialogProps.ts
+│   │       // src/types/dialogs/formDialogProps.ts
+│   │       import type { ReactNode } from 'react';
+│   │       import type { UseFormReturn } from '@/types/forms/base';
+│   │       import type { BaseDialogProps } from './baseDialogProps';
+│   │       
+│   │       export interface FormDialogProps<T extends Record<string, any>> extends Omit<BaseDialogProps, 'children'> {
+│   │         children: ReactNode;
+│   │         form: UseFormReturn<T>;
+│   │         submitLabel?: string;
+│   │         cancelLabel?: string;
+│   │         isSubmitting?: boolean;
+│   │         onSubmit?: (values: T) => Promise<void>;
+│   │       }
+│   └── index.ts
+│           // src/types/dialogs/index.ts
+│           export * from './baseDialogProps';
+│           export * from './confirmDialogProps';
+│           export * from './formDialogProps';
+├── forms/
+│   ├── base/
+│   │   ├── baseFormProps.ts
+│   │   │       import { FieldConfig } from "../fields";
+│   │   │       
+│   │   │       export interface BaseFormProps {
+│   │   │           title: string;
+│   │   │           description?: string;
+│   │   │           triggerButton: {
+│   │   │             label: string;
+│   │   │             icon?: React.ReactNode;
+│   │   │           };
+│   │   │           fields: FieldConfig[];
+│   │   │           onSubmit: (data: Record<string, any>) => Promise<void>;
+│   │   │           defaultValues?: Record<string, any>;
+│   │   │           submitLabel?: string;
+│   │   │         }
+│   │   ├── formConfig.ts
+│   │   │       // src/types/forms/base/formConfig.ts
+│   │   │       export interface FormConfig<T> {
+│   │   │         initialValues: T;
+│   │   │         onSubmit: (values: T) => Promise<void>;
+│   │   │         validate?: (values: T) => Promise<Record<string, string>> | Record<string, string>;
+│   │   │       }
+│   │   ├── formHandlers.ts
+│   │   │       // src/types/forms/base/formHandlers.ts
+│   │   │       
+│   │   │       import { FormEvent, ChangeEvent, FocusEvent } from 'react';
+│   │   │       
+│   │   │       export interface FormHandlers<T> {
+│   │   │         handleChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+│   │   │         handleBlur: (e: FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+│   │   │         setFieldValue: (field: keyof T, value: any) => void;
+│   │   │         setFieldError: (field: keyof T, error: string) => void;
+│   │   │         setFieldTouched: (field: keyof T, isTouched?: boolean) => void;
+│   │   │         handleSubmit: (e: FormEvent) => Promise<void>;
+│   │   │         resetForm: () => void;
+│   │   │       }
+│   │   ├── formState.ts
+│   │   │       // src/types/forms/base/formState.ts
+│   │   │       export interface FormState<T> {
+│   │   │         values: T;
+│   │   │         errors: Record<string, string>;
+│   │   │         touched: Record<keyof T, boolean>;
+│   │   │         isSubmitting: boolean;
+│   │   │         isDirty: boolean;
+│   │   │         isValid: boolean;
+│   │   │         submitCount: number;
+│   │   │       }
+│   │   ├── index.ts
+│   │   │       // src/types/forms/base/index.ts
+│   │   │       export * from './baseFormProps';
+│   │   │       export * from './formConfig';
+│   │   │       export * from './formState';
+│   │   │       export * from './formHandlers';
+│   │   │       export * from './useFormReturn';
+│   │   └── useFormReturn.ts
+│   │           import { FormState } from "./formState";
+│   │           import { FormHandlers } from "./formHandlers";
+│   │           
+│   │           // src/types/forms/useFormReturn.ts
+│   │           export interface UseFormReturn<T> extends FormState<T>, FormHandlers<T> {
+│   │             setValues: (values: T) => void;
+│   │             setErrors: (errors: Record<string, string>) => void;
+│   │             setTouched: (touched: Record<keyof T, boolean>) => void;
+│   │             validateField: (field: keyof T) => Promise<string | undefined>;
+│   │             validateForm: () => Promise<Record<string, string>>;
+│   │           }
+│   ├── fields/
+│   │   ├── buttonConfig.ts
+│   │   │       // src/types/forms/fields/buttonConfig.ts
+│   │   │       
+│   │   │       // Button style variants
+│   │   │       export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+│   │   │       export type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
+│   │   │       export type ButtonColor = 'blue' | 'green' | 'yellow' | 'purple' | 'indigo';
+│   │   │       
+│   │   │       // Base button configuration
+│   │   │       export interface BaseButtonConfig {
+│   │   │         label: string;
+│   │   │         variant?: ButtonVariant;
+│   │   │         size?: ButtonSize;
+│   │   │         color?: ButtonColor;
+│   │   │         icon?: React.ReactNode;
+│   │   │         disabled?: boolean;
+│   │   │         className?: string;
+│   │   │       }
+│   │   │       
+│   │   │       // Form buttons configuration
+│   │   │       export interface FormButtonsConfig {
+│   │   │         submit: BaseButtonConfig;
+│   │   │         cancel?: BaseButtonConfig;
+│   │   │         reset?: BaseButtonConfig;
+│   │   │       }
+│   │   │       
+│   │   │       // Form buttons props (for the component)
+│   │   │       export interface FormButtonsProps {
+│   │   │         config?: FormButtonsConfig;
+│   │   │         onCancel?: () => void;
+│   │   │         onReset?: () => void;
+│   │   │         isSubmitting?: boolean;
+│   │   │         submitText?: string;
+│   │   │         cancelText?: string;
+│   │   │         color?: ButtonColor;
+│   │   │         disabled?: boolean;
+│   │   │         className?: string;
+│   │   │       }
+│   │   │       
+│   │   │       // Form buttons state
+│   │   │       export interface FormButtonsState {
+│   │   │         isSubmitting: boolean;
+│   │   │         isValid: boolean;
+│   │   │         isDirty: boolean;
+│   │   │       }
+│   │   ├── fieldConfig.ts
+│   │   │       // src/types/forms/fields/fieldConfig.ts
+│   │   │       
+│   │   │       // Base field types supported by the form components
+│   │   │       export type FieldType = 'text' | 'textarea' | 'select' | 'number' | 'date' | 'datetime-local';
+│   │   │       
+│   │   │       // Option type for select fields
+│   │   │       export interface SelectOption {
+│   │   │         value: string;
+│   │   │         label: string;
+│   │   │       }
+│   │   │       
+│   │   │       // Base properties shared by all field types
+│   │   │       export interface BaseFieldConfig {
+│   │   │         name: string;
+│   │   │         label: string;  // Making label required for all field types
+│   │   │         type: FieldType;
+│   │   │         required?: boolean;
+│   │   │         placeholder?: string;
+│   │   │         disabled?: boolean;
+│   │   │         className?: string;
+│   │   │         validate?: (value: any) => string | undefined;
+│   │   │       }
+│   │   │       
+│   │   │       // Text field specific configuration
+│   │   │       export interface TextFieldConfig extends BaseFieldConfig {
+│   │   │         type: 'text';
+│   │   │         minLength?: number;
+│   │   │         maxLength?: number;
+│   │   │         pattern?: string;
+│   │   │       }
+│   │   │       
+│   │   │       // Textarea field specific configuration
+│   │   │       export interface TextAreaFieldConfig extends BaseFieldConfig {
+│   │   │         type: 'textarea';
+│   │   │         rows?: number;
+│   │   │         minLength?: number;
+│   │   │         maxLength?: number;
+│   │   │       }
+│   │   │       
+│   │   │       // Select field specific configuration
+│   │   │       export interface SelectFieldConfig extends BaseFieldConfig {
+│   │   │         type: 'select';
+│   │   │         options: SelectOption[];
+│   │   │         multiple?: boolean;
+│   │   │       }
+│   │   │       
+│   │   │       // Number field specific configuration
+│   │   │       export interface NumberFieldConfig extends BaseFieldConfig {
+│   │   │         type: 'number';
+│   │   │         min?: number;
+│   │   │         max?: number;
+│   │   │         step?: number;
+│   │   │       }
+│   │   │       
+│   │   │       // Date field specific configuration
+│   │   │       export interface DateFieldConfig extends BaseFieldConfig {
+│   │   │         type: 'date' | 'datetime-local';
+│   │   │         min?: string; // ISO date string
+│   │   │         max?: string; // ISO date string;
+│   │   │       }
+│   │   │       
+│   │   │       // Union type of all possible field configurations
+│   │   │       export type FieldConfig = 
+│   │   │         | TextFieldConfig 
+│   │   │         | TextAreaFieldConfig 
+│   │   │         | SelectFieldConfig 
+│   │   │         | NumberFieldConfig 
+│   │   │         | DateFieldConfig;
+│   │   │       
+│   │   │       // Field value type based on field type
+│   │   │       export type FieldValue<T extends FieldConfig> = 
+│   │   │         T extends TextFieldConfig | TextAreaFieldConfig ? string :
+│   │   │         T extends SelectFieldConfig ? (T['multiple'] extends true ? string[] : string) :
+│   │   │         T extends NumberFieldConfig ? number :
+│   │   │         T extends DateFieldConfig ? string :
+│   │   │         never;
+│   │   │       
+│   │   ├── fieldProps.ts
+│   │   │       // src/types/forms/fields/fieldProps.ts
+│   │   │       import { FieldConfig } from "./fieldConfig";
+│   │   │       
+│   │   │       export interface FormFieldProps {
+│   │   │           field: FieldConfig;
+│   │   │           value: any;
+│   │   │           onChange: (name: string, value: any) => void;
+│   │   │           onBlur?: (name: string) => void;
+│   │   │           error?: string;
+│   │   │           touched?: boolean;
+│   │   │         }
+│   │   │         
+│   │   │         // Form field wrapper component props
+│   │   │         export interface FormFieldWrapperProps {
+│   │   │           label: string;
+│   │   │           required?: boolean;
+│   │   │           error?: string;
+│   │   │           children: React.ReactNode;
+│   │   │           className?: string;
+│   │   │         }
+│   │   │         
+│   │   └── index.ts
+│   │           export * from './fieldConfig';
+│   │           export * from './fieldProps';
+│   │           export * from './buttonConfig';
+│   └── index.ts
+│           export * from './base';
+│           export * from './fields';
+├── index.ts
+│       // src/types/index.ts
+│       
+│       export * from './base';
+│       export * from './project';
+│       export * from './objective';
+│       export * from './task';
+│       export * from './todo';
+│       export * from './time';
+│       export * from './forms/base';
+│       export * from './forms/fields';
+│       export * from './dialogs';
+│       export * from './timeline';
+│       export * from './cards';
+│       export * from './dashboard';
+├── objective/
+│   ├── index.ts
+│   │       // src/types/objective/index.ts
+│   │       
+│   │       export * from './objective';
+│   │       export * from './objectiveForm';
+│   │       export * from './objectiveProgress';
+│   ├── objective.ts
+│   │       // src/types/objective/objective.ts
+│   │       
+│   │       import { BaseEntity } from '../base';
+│   │       import { Project } from '../project/project';
+│   │       import { Task } from '../task/task';
+│   │       import { Status } from '../base';
+│   │       
+│   │       export interface Objective extends BaseEntity {
+│   │         name: string;
+│   │         description?: string;
+│   │         startDate?: Date;
+│   │         dueDate?: Date;
+│   │         status: Status;
+│   │         estimatedHours?: number;
+│   │         projectId: string;
+│   │         project?: Project;
+│   │         tasks?: Task[];
+│   │       }
+│   ├── objectiveForm.ts
+│   │       // src/types/objective/objectiveForm.ts
+│   │       import { Status } from '../base';
+│   │       
+│   │       export interface ObjectiveFormData {
+│   │         name: string;
+│   │         description?: string;
+│   │         projectId: string;
+│   │         startDate?: string; // ISO string
+│   │         dueDate?: string;   // ISO string
+│   │         estimatedHours?: string; // Handle as string, convert to number
+│   │         status: Status; // Added status
+│   │       }
+│   └── objectiveProgress.ts
+│           // src/types/objective/objectiveProgress.ts
+│           
+│           export interface ObjectiveProgress {
+│             totalTasks: number;
+│             completedTasks: number;
+│             progressPercentage: number;
+│             onTrackTasks: number;
+│             delayedTasks: number;
+│           }
+├── project/
+│   ├── index.ts
+│   │       // src/types/project/index.ts
+│   │       
+│   │       export * from './project';
+│   │       export * from './projectForm';
+│   │       export * from './projectStats';
+│   ├── project.ts
+│   │       // src/types/project/project.ts
+│   │       
+│   │       import { BaseEntity } from '../base';
+│   │       import { Objective } from '../objective/objective';
+│   │       import { Task } from '../task/task';
+│   │       import { Status } from '../base';
+│   │       
+│   │       export interface Project extends BaseEntity {
+│   │         name: string;
+│   │         description?: string;
+│   │         startDate?: Date;
+│   │         dueDate?: Date;
+│   │         status: Status;
+│   │         estimatedHours?: number;
+│   │         objectives?: Objective[];
+│   │         tasks?: Task[];
+│   │       }
+│   ├── projectForm.ts
+│   │       // src/types/project/projectForm.ts
+│   │       import { Status } from '../base';
+│   │       
+│   │       export interface ProjectFormData {
+│   │         name: string;
+│   │         description?: string;
+│   │         startDate?: string; // ISO string for HTML date input
+│   │         dueDate?: string;   // ISO string for HTML date input
+│   │         status: Status;
+│   │         estimatedHours?: string; // Handle as string in form, convert to number
+│   │       }
+│   └── projectStats.ts
+│           // src/types/project/projectStats.ts
+│           
+│           export interface ProjectStats {
+│             totalProjects: number;
+│             activeProjects: number;
+│             completedProjects: number;
+│             // Add more stats as needed
+│           }
+├── store.ts
+│       // src/types/store.ts
+│       import { CardSlice } from '@/store/slices/cards';
+│       import { ProjectSlice } from '@/store/slices/project';
+│       import { TaskSlice } from '@/store/slices/tasks';
+│       import { ObjectiveSlice } from '@/store/slices/objectives';
+│       import { TodoListSlice } from '@/store/slices/todoLists';
+│       import { TimeEntrySlice } from '@/store/slices/timeEntries';
+│       
+│       export type StoreState = ProjectSlice & 
+│         TaskSlice & 
+│         ObjectiveSlice & 
+│         TodoListSlice & 
+│         TimeEntrySlice & 
+│         CardSlice;
+├── task/
+│   ├── index.ts
+│   │       export * from './task';
+│   │       export * from './taskForm';
+│   ├── task.ts
+│   │       // src/types/task/task.ts
+│   │       
+│   │       import { BaseEntity, Priority, Status } from '../base';
+│   │       import { Project } from '../project/project';
+│   │       import { Objective } from '../objective/objective';
+│   │       import { TodoList } from '../todo/todoList';
+│   │       import { TimeEntry } from '../time/timeEntry';
+│   │       
+│   │       export type TaskStatus = 'todo' | 'in-progress' | 'done';
+│   │       
+│   │       export interface Task extends BaseEntity {
+│   │         content: string;
+│   │         description?: string;
+│   │         status: TaskStatus;
+│   │         priority: Priority;
+│   │         startDate?: Date;
+│   │         dueDate?: Date;
+│   │         estimatedHours?: number;
+│   │         actualHours?: number;
+│   │         projectId: string;
+│   │         project?: Project;
+│   │         objectiveId?: string;
+│   │         objective?: Objective | null;
+│   │         todoLists?: TodoList[];
+│   │         timeEntries?: TimeEntry[];
+│   │       }
+│   └── taskForm.ts
+│           // src/types/task/taskForm.ts
+│           import { TaskStatus } from "./task";
+│           import { Priority } from "../base";
+│           
+│           export interface TaskFormData {
+│             content: string;
+│             description?: string;
+│             status: TaskStatus;
+│             priority: Priority;
+│             projectId: string;
+│             objectiveId?: string;
+│             startDate: string; // ISO string
+│             dueDate: string;   // ISO string
+│             estimatedHours?: string; // Handle as string, convert to number
+│             actualHours?: string;    // Handle as string, convert to number
+│           }
+├── time/
+│   ├── index.ts
+│   │       export * from './timeEntry';
+│   │       export * from './timeEntryForm';
+│   │       export * from './timeEntryStats';
+│   │       export * from './timeTracking';
+│   ├── timeEntry.ts
+│   │       // src/types/time/timeEntry.ts
+│   │       
+│   │       import { BaseEntity } from '../base';
+│   │       import { Task } from '../task/task';
+│   │       
+│   │       export interface TimeEntry extends BaseEntity {
+│   │         taskId: string;
+│   │         task: Task;
+│   │         startTime: Date;
+│   │         endTime?: Date;
+│   │         duration?: number; // Duration in minutes
+│   │         description?: string;
+│   │       }
+│   ├── timeEntryForm.ts
+│   │       // src/types/time/timeEntryForm.ts
+│   │       
+│   │       export interface TimeEntryFormData {
+│   │         taskId: string;
+│   │         startTime: string; // ISO string
+│   │         endTime?: string;  // ISO string
+│   │         description?: string;
+│   │       }
+│   ├── timeEntryStats.ts
+│   │       // src/types/time/timeEntryStats.ts
+│   │       
+│   │       export interface TimeEntryStats {
+│   │         totalDuration: number;       // in minutes
+│   │         averageDuration: number;     // in minutes
+│   │         entriesCount: number;
+│   │         dailyAverage: number;        // in minutes
+│   │       }
+│   └── timeTracking.ts
+│           // src/types/time/timeTracking.ts
+│           
+│           export interface TimeTracking {
+│             startDate: string; // ISO string
+│             dueDate?: string;  // ISO string
+│             estimatedHours?: number;
+│           }
+├── timeline/
+│   ├── index.ts
+│   │       export * from './timeline';
+│   └── timeline.ts
+│           // src/types/timeline/timeline.ts
+│           export interface TimelineEvent {
+│               id: string;
+│               title: string;
+│               date: string;
+│               description: string;
+│               status: 'completed' | 'in-progress' | 'upcoming';
+│             }
+│             
+│             export interface TimelineProps {
+│               events?: TimelineEvent[];
+│             }
+│             
+│             export interface TimelineItemProps {
+│               event: TimelineEvent;
+│             }
+│             
+│             export interface TimelineIndicatorProps {
+│               status: TimelineEvent['status'];
+│             }
+│             
+│             export interface TimelineContentProps {
+│               event: TimelineEvent;
+│             }
+└── todo/
+    ├── index.ts
+    │       export * from './todoList';
+    │       export * from './todoListStats';
+    │       export * from './todoListForm';
+    ├── todoList.ts
+    │       // src/types/todoList/todoList.ts
+    │       
+    │       import { BaseEntity } from '../base';
+    │       import { Task } from '../task/task';
+    │       
+    │       export type TodoListStatus = 'active' | 'archived';
+    │       export type TodoListType = 'daily' | 'weekly' | 'monthly'; // Extend as needed
+    │       
+    │       export interface TodoList extends BaseEntity {
+    │         name: string;
+    │         type: TodoListType;
+    │         tasks: Task[];
+    │       }
+    ├── todoListForm.ts
+    │       // src/types/todoList/todoListForm.ts
+    │       import { TodoListType } from "./todoList";
+    │       
+    │       export interface TodoListFormData {
+    │         name: string;
+    │         type: TodoListType;
+    │       }
+    └── todoListStats.ts
+            // src/types/todoList/todoListStats.ts
+            
+            export interface TodoListStats {
+              totalTodoLists: number;
+              activeTodoLists: number;
+              archivedTodoLists: number;
+              // Add more stats as needed
+            }
