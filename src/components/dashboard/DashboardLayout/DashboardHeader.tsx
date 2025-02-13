@@ -3,17 +3,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { RefreshCw, Bell } from 'lucide-react';
 
-interface DashboardHeaderProps {
-  title: string;
-  description?: string;
-  stats?: {
-    label: string;
-    value: string | number;
-  }[];
-  onRefresh?: () => Promise<void>;
-  className?: string;
-  actions?: React.ReactNode;
-}
+import type { DashboardHeaderProps } from '@/types/dashboard';
 
 export function DashboardHeader({
   title,
