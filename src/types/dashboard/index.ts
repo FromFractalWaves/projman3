@@ -1,2 +1,3 @@
 export * from './dashboard';
-export * from './objectives'
+export * from './objectives';
+export * from './projects';
