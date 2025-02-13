@@ -1,0 +1,239 @@
+import React, { useMemo, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { CardList } from '@/components/cards';
+import { 
+  CheckSquare, 
+  PlusCircle, 
+  Search,
+  Filter,
+  Clock,
+  AlertTriangle,
+  ArrowUpCircle
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { 
+  DashboardTasksProps, 
+  TaskStats, 
+  TaskFilterState,
+  TaskFilterProps 
+} from '@/types/dashboard/tasks';
+
+function TaskFilters({
+  projects,
+  objectives,
+  filters,
+  onFilterChange
+}: TaskFilterProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-400" />
+        <Input
+          placeholder="Search tasks..."
+          className="pl-8"
+          value={filters.search}
+          onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
+        />
+      </div>
+      
+      <Select
+        value={filters.status}
+        onValueChange={(value) => onFilterChange({ ...filters, status: value })}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">All Status</SelectItem>
+          <SelectItem value="todo">Todo</SelectItem>
+          <SelectItem value="in-progress">In Progress</SelectItem>
+          <SelectItem value="done">Done</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.priority}
+        onValueChange={(value) => onFilterChange({ ...filters, priority: value })}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by priority" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">All Priorities</SelectItem>
+          <SelectItem value="high">High</SelectItem>
+          <SelectItem value="medium">Medium</SelectItem>
+          <SelectItem value="low">Low</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.projectId}
+        onValueChange={(value) => onFilterChange({ ...filters, projectId: value })}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by project" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">All Projects</SelectItem>
+          {projects.map((project) => (
+            <SelectItem key={project.id} value={project.id}>
+              {project.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function TaskStats({ tasks }: { tasks: DashboardTasksProps['tasks'] }) {
+  const stats = useMemo<TaskStats>(() => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.status === 'done').length;
+    const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
+    const todoTasks = tasks.filter(t => t.status === 'todo').length;
+    const overdueTasks = tasks.filter(t => 
+      t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done'
+    ).length;
+    const highPriorityTasks = tasks.filter(t => t.priority === 'high').length;
+
+    return {
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      todoTasks,
+      overdueTasks,
+      highPriorityTasks
+    };
+  }, [tasks]);
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card className="bg-zinc-800/40 border-zinc-700/50 p-4">
+        <div className="flex items-center gap-2">
+          <CheckSquare className="h-5 w-5 text-emerald-500" />
+          <div>
+            <div className="text-sm text-zinc-400">Completed</div>
+            <div className="text-2xl font-bold text-zinc-100">
+              {stats.completedTasks}/{stats.totalTasks}
+            </div>
+          </div>
+        </div>
+      </Card>
+      
+      <Card className="bg-zinc-800/40 border-zinc-700/50 p-4">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-blue-500" />
+          <div>
+            <div className="text-sm text-zinc-400">In Progress</div>
+            <div className="text-2xl font-bold text-zinc-100">
+              {stats.inProgressTasks}
+            </div>
+          </div>
+        </div>
+      </Card>
+      
+      <Card className="bg-zinc-800/40 border-zinc-700/50 p-4">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-red-500" />
+          <div>
+            <div className="text-sm text-zinc-400">Overdue</div>
+            <div className="text-2xl font-bold text-zinc-100">
+              {stats.overdueTasks}
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+export function DashboardTasks({
+  tasks,
+  projects,
+  objectives,
+  onTaskClick,
+  onAddTask,
+  onEditTask,
+  onDeleteTask,
+  onStatusChange,
+  onPriorityChange,
+  className
+}: DashboardTasksProps) {
+  const [filters, setFilters] = useState<TaskFilterState>({});
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filters.status && task.status !== filters.status) return false;
+      if (filters.priority && task.priority !== filters.priority) return false;
+      if (filters.projectId && task.projectId !== filters.projectId) return false;
+      if (filters.objectiveId && task.objectiveId !== filters.objectiveId) return false;
+      if (filters.search) {
+        const search = filters.search.toLowerCase();
+        return task.content.toLowerCase().includes(search) ||
+               task.description?.toLowerCase().includes(search);
+      }
+      return true;
+    });
+  }, [tasks, filters]);
+
+  return (
+    <div className={cn("space-y-6", className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckSquare className="h-5 w-5 text-zinc-400" />
+          <h2 className="text-lg font-semibold text-zinc-100">Tasks</h2>
+        </div>
+        {onAddTask && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onAddTask}
+            className="gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Add Task
+          </Button>
+        )}
+      </div>
+
+      {/* Stats */}
+      <TaskStats tasks={tasks} />
+
+      {/* Filters */}
+      <TaskFilters
+        projects={projects}
+        objectives={objectives}
+        filters={filters}
+        onFilterChange={setFilters}
+      />
+
+      {/* Task List */}
+      <Card className="bg-zinc-800/40 border-zinc-700/50">
+        <div className="p-6 space-y-4">
+          <div className="text-sm text-zinc-400">
+            Showing {filteredTasks.length} tasks
+          </div>
+          <CardList
+            type="task"
+            items={filteredTasks}
+            variant="compact"
+            onClick={onTaskClick}
+          />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+export default DashboardTasks;
