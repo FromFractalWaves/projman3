@@ -1,10 +1,10 @@
+
 // src/components/cards/TaskCard.tsx
 import React from 'react';
 import { BaseCard } from './BaseCard';
-import type { Task } from '@/types/task';
 import type { TaskCardProps } from '@/types/cards/cardProps';
-import { useTaskCard } from '@/hooks/cards/useTaskCards';
-import { Play, Pause, Square, Check, Clock, AlertTriangle } from 'lucide-react';
+import { Play, Square, Check, Clock, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function TaskCard({
   task,
@@ -13,51 +13,40 @@ export function TaskCard({
   onClick,
   ...props
 }: TaskCardProps) {
-  const {
-    stats,
-    isTimerRunning,
-    handleComplete,
-    handleStartTimer,
-    handleStopTimer,
-    handleEdit,
-    handleDelete
-  } = useTaskCard(task);
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+  const progress = task.estimatedHours && task.actualHours
+    ? Math.min((task.actualHours / task.estimatedHours) * 100, 100)
+    : 0;
 
   const actions = {
     complete: {
       label: 'Complete',
       icon: <Check className="h-4 w-4" />,
-      onClick: handleComplete,
-      variant: 'primary',
+      onClick: () => {},
+      variant: 'primary' as const,
       disabled: task.status === 'done'
     },
-    timer: isTimerRunning ? {
-      label: 'Stop Timer',
-      icon: <Square className="h-4 w-4" />,
-      onClick: handleStopTimer,
-      variant: 'secondary'
-    } : {
+    timer: {
       label: 'Start Timer',
       icon: <Play className="h-4 w-4" />,
-      onClick: handleStartTimer,
-      variant: 'secondary'
+      onClick: () => {},
+      variant: 'secondary' as const
     },
     edit: {
       label: 'Edit',
-      onClick: handleEdit,
-      variant: 'secondary'
+      onClick: () => {},
+      variant: 'secondary' as const
     },
     delete: {
       label: 'Delete',
-      onClick: handleDelete,
-      variant: 'destructive'
+      onClick: () => {},
+      variant: 'destructive' as const
     }
   };
 
   return (
     <BaseCard
-      type="task"
-      title={task.content}
+      content={task.content}
       description={task.description}
       status={task.status}
       priority={task.priority}
@@ -70,7 +59,7 @@ export function TaskCard({
       onClick={onClick}
       {...props}
     >
-      {stats.isOverdue && (
+      {isOverdue && task.status !== 'done' && (
         <div className="flex items-center gap-2 text-sm text-red-400">
           <AlertTriangle className="h-4 w-4" />
           <span>Overdue</span>
@@ -80,7 +69,7 @@ export function TaskCard({
         <div className="flex items-center gap-2 text-sm text-zinc-400">
           <Clock className="h-4 w-4" />
           <span>
-            {stats.timeSpent} / {task.estimatedHours}h ({Math.round(stats.percentComplete)}%)
+            {task.actualHours || 0} / {task.estimatedHours}h ({Math.round(progress)}%)
           </span>
         </div>
       )}

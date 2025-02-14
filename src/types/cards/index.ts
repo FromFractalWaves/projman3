@@ -2,4 +2,5 @@
 export * from './cardActions';
 export * from './cardCommon';
 export * from './cardProps';
-export * from './variants';
+export * from './varients';
+
