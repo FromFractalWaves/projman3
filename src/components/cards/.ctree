@@ -1,0 +1,445 @@
+cards/
+├── BaseCard.tsx
+│       // BaseCard.tsx
+│       import React from 'react';
+│       import { Card } from '@/components/ui/card';
+│       import { CardHeader } from './CardHeader';
+│       import { CardContent } from './CardContent';
+│       import { CardFooter } from './CardFooter';
+│       import { CardActions } from './CardActions';
+│       import { cn } from '@/lib/utils';
+│       import type { BaseCardProps } from '@/types/cards/cardProps';
+│       import type { CardActionsForEntity } from '@/types/cards/cardActions';
+│       
+│       export function BaseCard<T extends BaseCardProps>({
+│         type,
+│         title,
+│         description,
+│         status,
+│         priority,
+│         startDate,
+│         dueDate,
+│         estimatedHours,
+│         actions,
+│         variant = 'default',
+│         className,
+│         children,
+│         onClick,
+│         ...props
+│       }: T) {
+│         return (
+│           <Card
+│             className={cn(
+│               "bg-zinc-900 border-zinc-800 hover:bg-zinc-800/50 transition-colors",
+│               variant === 'compact' && "p-3",
+│               onClick && "cursor-pointer",
+│               className
+│             )}
+│             onClick={onClick}
+│             {...props}
+│           >
+│             <CardHeader
+│               title={title}
+│               status={status}
+│               priority={priority}
+│               variant={variant}
+│             />
+│             
+│             <CardContent variant={variant}>
+│               {description && (
+│                 <p className="text-sm text-zinc-400 line-clamp-2 mb-4">
+│                   {description}
+│                 </p>
+│               )}
+│               {children}
+│             </CardContent>
+│       
+│             {(startDate || dueDate || estimatedHours) && (
+│               <CardFooter
+│                 startDate={startDate}
+│                 dueDate={dueDate}
+│                 estimatedHours={estimatedHours}
+│                 variant={variant}
+│               />
+│             )}
+│       
+│             {actions && Object.keys(actions).length > 0 && (
+│               <CardActions
+│                 actions={actions as CardActionsForEntity<any>}
+│                 variant={variant}
+│               />
+│             )}
+│           </Card>
+│         );
+│       }
+├── CardActions.tsx
+│       
+│       // CardActions.tsx
+│       import React from 'react';
+│       import { Button } from '@/components/ui/button';
+│       import {
+│         DropdownMenu,
+│         DropdownMenuContent,
+│         DropdownMenuItem,
+│         DropdownMenuTrigger
+│       } from '@/components/ui/dropdown-menu';
+│       import { MoreVertical } from 'lucide-react';
+│       import { cn } from '@/lib/utils';
+│       import type { CardActionsForEntity, BaseCardAction } from '@/types/cards/cardActions';
+│       
+│       interface CardActionsProps {
+│         actions: CardActionsForEntity<any>;
+│         variant?: 'default' | 'compact';
+│       }
+│       
+│       export function CardActions({
+│         actions,
+│         variant = 'default'
+│       }: CardActionsProps) {
+│         // Split actions into primary and secondary groups
+│         const primaryActions = Object.entries(actions).filter(
+│           ([_, action]) => !action.variant || action.variant === 'primary'
+│         );
+│         const secondaryActions = Object.entries(actions).filter(
+│           ([_, action]) => action.variant === 'secondary' || action.variant === 'destructive'
+│         );
+│       
+│         const renderAction = ([key, action]: [string, BaseCardAction]) => (
+│           <Button
+│             key={key}
+│             variant={action.variant || 'default'}
+│             size={variant === 'compact' ? 'sm' : 'default'}
+│             onClick={action.onClick}
+│             disabled={action.disabled}
+│             className={cn("gap-2", action.className)}
+│           >
+│             {action.icon}
+│             {variant !== 'compact' && action.label}
+│           </Button>
+│         );
+│       
+│         return (
+│           <div className={cn(
+│             "flex items-center justify-between",
+│             variant === 'compact' ? 'px-2 pb-2' : 'px-6 pb-4'
+│           )}>
+│             <div className="flex gap-2">
+│               {primaryActions.map(renderAction)}
+│             </div>
+│       
+│             {secondaryActions.length > 0 && (
+│               <DropdownMenu>
+│                 <DropdownMenuTrigger asChild>
+│                   <Button
+│                     variant="ghost"
+│                     size={variant === 'compact' ? 'sm' : 'default'}
+│                   >
+│                     <MoreVertical className="h-4 w-4" />
+│                   </Button>
+│                 </DropdownMenuTrigger>
+│                 <DropdownMenuContent
+│                   align="end"
+│                   className="bg-zinc-800 border-zinc-700"
+│                 >
+│                   {secondaryActions.map(([key, action]) => (
+│                     <DropdownMenuItem
+│                       key={key}
+│                       onClick={action.onClick}
+│                       disabled={action.disabled}
+│                       className={cn(
+│                         "text-zinc-200 focus:text-zinc-200 focus:bg-zinc-700",
+│                         action.variant === 'destructive' && "text-red-400 focus:text-red-400",
+│                         action.className
+│                       )}
+│                     >
+│                       {action.icon}
+│                       {action.label}
+│                     </DropdownMenuItem>
+│                   ))}
+│                 </DropdownMenuContent>
+│               </DropdownMenu>
+│             )}
+│           </div>
+│         );
+│       }
+├── CardContent.tsx
+│       
+│       // CardContent.tsx
+│       import React from 'react';
+│       import { CardContent as UICardContent } from '@/components/ui/card';
+│       import { cn } from '@/lib/utils';
+│       
+│       interface CardContentProps {
+│         children: React.ReactNode;
+│         variant?: 'default' | 'compact';
+│         className?: string;
+│       }
+│       
+│       export function CardContent({
+│         children,
+│         variant = 'default',
+│         className
+│       }: CardContentProps) {
+│         return (
+│           <UICardContent className={cn(
+│             variant === 'compact' ? 'p-2' : 'px-6 py-4',
+│             className
+│           )}>
+│             {children}
+│           </UICardContent>
+│         );
+│       }
+├── CardFooter.tsx
+│       
+│       // CardFooter.tsx
+│       import React from 'react';
+│       import { CardFooter as UICardFooter } from '@/components/ui/card';
+│       import { Clock, Calendar } from 'lucide-react';
+│       import { cn } from '@/lib/utils';
+│       
+│       interface CardFooterProps {
+│         startDate?: string;
+│         dueDate?: string;
+│         estimatedHours?: number;
+│         variant?: 'default' | 'compact';
+│       }
+│       
+│       export function CardFooter({
+│         startDate,
+│         dueDate,
+│         estimatedHours,
+│         variant = 'default'
+│       }: CardFooterProps) {
+│         return (
+│           <UICardFooter className={cn(
+│             "flex flex-wrap gap-4 text-sm text-zinc-400",
+│             variant === 'compact' ? 'p-2' : 'px-6 py-4'
+│           )}>
+│             {(startDate || dueDate) && (
+│               <div className="flex flex-wrap gap-4">
+│                 {startDate && (
+│                   <div className="flex items-center gap-1">
+│                     <Calendar className="h-4 w-4" />
+│                     <span>Start: {new Date(startDate).toLocaleDateString()}</span>
+│                   </div>
+│                 )}
+│                 {dueDate && (
+│                   <div className="flex items-center gap-1">
+│                     <Calendar className="h-4 w-4" />
+│                     <span>Due: {new Date(dueDate).toLocaleDateString()}</span>
+│                   </div>
+│                 )}
+│               </div>
+│             )}
+│             {estimatedHours && (
+│               <div className="flex items-center gap-1">
+│                 <Clock className="h-4 w-4" />
+│                 <span>Est: {estimatedHours}h</span>
+│               </div>
+│             )}
+│           </UICardFooter>
+│         );
+│       }
+├── CardHeader.tsx
+│       
+│       // CardHeader.tsx
+│       import React from 'react';
+│       import { CardHeader as UICardHeader, CardTitle } from '@/components/ui/card';
+│       import { Badge } from '@/components/ui/badge';
+│       import { cn } from '@/lib/utils';
+│       import type { Status, Priority } from '@/types/base';
+│       
+│       interface CardHeaderProps {
+│         title: string;
+│         status?: Status;
+│         priority?: Priority;
+│         variant?: 'default' | 'compact';
+│       }
+│       
+│       export function CardHeader({
+│         title,
+│         status,
+│         priority,
+│         variant = 'default'
+│       }: CardHeaderProps) {
+│         const getStatusColor = (status: Status) => {
+│           switch (status) {
+│             case 'completed':
+│             case 'done':
+│               return 'bg-emerald-500/10 text-emerald-400';
+│             case 'in-progress':
+│             case 'active':
+│               return 'bg-blue-500/10 text-blue-400';
+│             default:
+│               return 'bg-zinc-500/10 text-zinc-400';
+│           }
+│         };
+│       
+│         const getPriorityColor = (priority: Priority) => {
+│           switch (priority) {
+│             case 'high':
+│               return 'bg-red-500/10 text-red-400';
+│             case 'medium':
+│               return 'bg-yellow-500/10 text-yellow-400';
+│             case 'low':
+│               return 'bg-blue-500/10 text-blue-400';
+│             default:
+│               return 'bg-zinc-500/10 text-zinc-400';
+│           }
+│         };
+│       
+│         return (
+│           <UICardHeader className={cn(
+│             "flex flex-row items-start justify-between space-y-0",
+│             variant === 'compact' && "p-2"
+│           )}>
+│             <CardTitle className={cn(
+│               "text-base font-medium text-zinc-100",
+│               variant === 'compact' && "text-sm"
+│             )}>
+│               {title}
+│             </CardTitle>
+│             <div className="flex items-center gap-2">
+│               {status && (
+│                 <Badge
+│                   variant="secondary"
+│                   className={cn("capitalize", getStatusColor(status))}
+│                 >
+│                   {status}
+│                 </Badge>
+│               )}
+│               {priority && (
+│                 <Badge
+│                   variant="secondary"
+│                   className={cn("capitalize", getPriorityColor(priority))}
+│                 >
+│                   {priority}
+│                 </Badge>
+│               )}
+│             </div>
+│           </UICardHeader>
+│         );
+│       }
+│       
+├── CardList.tsx
+│       // src/components/cards/CardList.tsx
+│       import React from 'react';
+│       import { ProjectCard, TaskCard, ObjectiveCard, TodoListCard } from './BaseCard';
+│       import { CardViewControls } from '@/components/ui/CardViewControls';
+│       import { useCardViewState } from '@/hooks/useCardViewState';
+│       import { useCardFilterState } from '@/hooks/useCardFilterState';
+│       import type { Project, Task, Objective, TodoList, EntityType, BaseEntity } from '@/types';
+│       import { cn } from '@/lib/utils';
+│       
+│       interface CardListProps {
+│         type: EntityType;
+│         items: Array<Project | Task | Objective | TodoList>;
+│         onItemClick?: (item: Project | Task | Objective | TodoList) => void;
+│         className?: string;
+│       }
+│       
+│       export function CardList({
+│         type,
+│         items,
+│         onItemClick,
+│         className
+│       }: CardListProps) {
+│         // Separate view state management
+│         const {
+│           view,
+│           variant,
+│           setView,
+│           setVariant,
+│           getLayoutClasses,
+│         } = useCardViewState();
+│       
+│         // Separate filtering and sorting state management
+│         const {
+│           filteredItems,
+│           sortDirection,
+│           toggleSortDirection,
+│         } = useCardFilterState(items);
+│       
+│         const getCardComponent = (item: Project | Task | Objective | TodoList) => {
+│           switch (type) {
+│             case 'project':
+│               return (
+│                 <ProjectCard
+│                   key={item.id}
+│                   project={item as Project}
+│                   variant={variant}
+│                   onClick={() => onItemClick?.(item)}
+│                 />
+│               );
+│             case 'task':
+│               return (
+│                 <TaskCard
+│                   key={item.id}
+│                   task={item as Task}
+│                   variant={variant}
+│                   onClick={() => onItemClick?.(item)}
+│                 />
+│               );
+│             case 'objective':
+│               return (
+│                 <ObjectiveCard
+│                   key={item.id}
+│                   objective={item as Objective}
+│                   variant={variant}
+│                   onClick={() => onItemClick?.(item)}
+│                 />
+│               );
+│             case 'todoList':
+│               return (
+│                 <TodoListCard
+│                   key={item.id}
+│                   todoList={item as TodoList}
+│                   variant={variant}
+│                   onClick={() => onItemClick?.(item)}
+│                 />
+│               );
+│             default:
+│               return null;
+│           }
+│         };
+│       
+│         if (!filteredItems?.length) {
+│           return (
+│             <div className="p-4 text-center text-zinc-500 bg-zinc-900/50 border border-zinc-800 rounded-lg">
+│               No items to display
+│             </div>
+│           );
+│         }
+│       
+│         return (
+│           <div className="space-y-4">
+│             <div className="flex justify-between items-center">
+│               <CardViewControls
+│                 view={view}
+│                 variant={variant}
+│                 onViewChange={setView}
+│                 onVariantChange={setVariant}
+│                 onSortToggle={toggleSortDirection}
+│               />
+│             </div>
+│       
+│             <div className={cn(getLayoutClasses(), className)}>
+│               {filteredItems.map((item) => (
+│                 <React.Fragment key={item.id}>
+│                   {getCardComponent(item)}
+│                 </React.Fragment>
+│               ))}
+│             </div>
+│           </div>
+│         );
+│       }
+└── index.ts
+        
+        // index.ts
+        export * from './BaseCard';
+        export * from './CardHeader';
+        export * from './CardContent';
+        export * from './CardFooter';
+        export * from './CardActions';
+        export * from './CardList';
+        export * from './ProjectCard';

@@ -2,12 +2,10 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { BaseEntity, EntityType } from '@/types/base';
-import { 
-  projectsApi, 
-  objectivesApi, 
-  tasksApi, 
-  todoListsApi 
-} from '@/lib/api';
+import { projectsApi } from '@/lib/api/projects';
+import { objectivesApi } from '@/lib/api/objectives';
+import { tasksApi } from '@/lib/api/tasks';
+import { todoListsApi } from '@/lib/api/todoLists';
 
 interface UseCardOptions {
   type: EntityType;
